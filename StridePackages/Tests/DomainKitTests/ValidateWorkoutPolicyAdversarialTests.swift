@@ -86,7 +86,14 @@ struct ValidateWorkoutPolicyAdversarialTests {
         let step = SegmentStep(intent: .tempo, goal: .open, target: .pace(range: .infinity...(.infinity)))
         let workout = Fixtures.makeWorkout(segments: [.step(step)])
         let issues = ValidateWorkoutPolicy.validate(workout)
-        #expect(issues.contains(where: { if case .paceLowerBoundNotPositive = $0.rule { return true }; return false }))
+        #expect(
+            issues.contains(
+                ValidationIssue(
+                    rule: .paceRangeNotPositive(lowerBound: .infinity, upperBound: .infinity),
+                    locator: .segment(id: step.id)
+                )
+            )
+        )
     }
 
     // Fixed: a finite, positive pace lower bound paired with a `+.infinity`
@@ -98,7 +105,14 @@ struct ValidateWorkoutPolicyAdversarialTests {
         let step = SegmentStep(intent: .tempo, goal: .open, target: .pace(range: 0.2...(.infinity)))
         let workout = Fixtures.makeWorkout(segments: [.step(step)])
         let issues = ValidateWorkoutPolicy.validate(workout)
-        #expect(issues.contains(where: { if case .paceLowerBoundNotPositive = $0.rule { return true }; return false }))
+        #expect(
+            issues.contains(
+                ValidationIssue(
+                    rule: .paceRangeNotPositive(lowerBound: 0.2, upperBound: .infinity),
+                    locator: .segment(id: step.id)
+                )
+            )
+        )
     }
 
     @Test("Cadence range with +infinity bounds IS reported")

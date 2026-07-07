@@ -36,9 +36,10 @@ public enum ValidationRule: Equatable, Hashable, Sendable {
     case goalDistanceNotPositive(meters: Double)
     /// A duration goal's seconds are not strictly positive.
     case goalDurationNotPositive(seconds: TimeInterval)
-    /// A pace target's range lower bound is not strictly positive
-    /// (0 s/m is an infinitely fast, meaningless pace).
-    case paceLowerBoundNotPositive(lowerBound: Double)
+    /// A pace target's range bounds are not strictly positive
+    /// (0 s/m is an infinitely fast, meaningless pace, and a
+    /// non-finite upper bound is an infinitely slow, meaningless pace).
+    case paceRangeNotPositive(lowerBound: Double, upperBound: Double)
     /// A heart-rate range target's bounds are not strictly positive.
     case heartRateRangeNotPositive(lowerBound: Double, upperBound: Double)
     /// A heart-rate zone target is outside Apple's 1...5 five-zone model.
@@ -165,7 +166,12 @@ public enum ValidateWorkoutPolicy {
             // other upper sanity bound is enforced, per task 0.4 design notes
             // (no arbitrary limits).
             if !isPositiveFinite(range.lowerBound) || !range.upperBound.isFinite {
-                return [ValidationIssue(rule: .paceLowerBoundNotPositive(lowerBound: range.lowerBound), locator: locator)]
+                return [
+                    ValidationIssue(
+                        rule: .paceRangeNotPositive(lowerBound: range.lowerBound, upperBound: range.upperBound),
+                        locator: locator
+                    )
+                ]
             }
             return []
 

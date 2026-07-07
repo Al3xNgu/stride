@@ -16,17 +16,20 @@ struct ValidateWorkoutPolicyTargetTests {
         let step = SegmentStep(intent: .tempo, goal: .open, target: .pace(range: 0.2...0.3))
         let workout = Fixtures.makeWorkout(segments: [.step(step)])
         let issues = ValidateWorkoutPolicy.validate(workout)
-        #expect(!issues.contains(where: { if case .paceLowerBoundNotPositive = $0.rule { return true }; return false }))
+        #expect(!issues.contains(where: { if case .paceRangeNotPositive = $0.rule { return true }; return false }))
     }
 
-    @Test("Pace target with 0 lower bound (boundary) reports paceLowerBoundNotPositive")
+    @Test("Pace target with 0 lower bound (boundary) reports paceRangeNotPositive")
     func paceTargetZeroLowerBoundReported() {
         let step = SegmentStep(intent: .tempo, goal: .open, target: .pace(range: 0...0.3))
         let workout = Fixtures.makeWorkout(segments: [.step(step)])
         let issues = ValidateWorkoutPolicy.validate(workout)
         #expect(
             issues.contains(
-                ValidationIssue(rule: .paceLowerBoundNotPositive(lowerBound: 0), locator: .segment(id: step.id))
+                ValidationIssue(
+                    rule: .paceRangeNotPositive(lowerBound: 0, upperBound: 0.3),
+                    locator: .segment(id: step.id)
+                )
             )
         )
     }

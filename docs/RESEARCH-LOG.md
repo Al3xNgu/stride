@@ -91,3 +91,9 @@ Running-relevant alert types (each has a value init + a `WorkoutAlert` static-fa
 7. Whether `workoutPreview` is required in the send flow or optional after first use (ARCHITECTURE §13.8).
 8. Pace-alert field feel: `.current` vs `.average` `WorkoutAlertMetric` for `SpeedRangeAlert` outdoors; indoor-run pace support (§4 of ARCHITECTURE).
 
+
+---
+
+## 2026-07-06 — Task 0.4 assumption (orchestrator note)
+
+- `ValidateWorkoutPolicy` bounds heart-rate zones to **1...5** (Apple's five-zone model). This is an **assumption**, not SDK-verified — `HeartRateZoneAlert(zone: Int)` takes an unconstrained Int. Confirm on device whether user-configured zone counts other than 5 exist when the WorkoutKit mapper lands (task 1.7). Mark the mapper call site `// HARDWARE-VERIFY:`.
