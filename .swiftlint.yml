@@ -1,0 +1,67 @@
+# Stride SwiftLint configuration — run as `swiftlint --strict` from the repo root.
+# CLAUDE.md definition of done requires a clean strict run.
+
+included:
+  - StridePackages/Sources
+  - StridePackages/Tests
+  - StrideApp
+
+excluded:
+  - StridePackages/.build
+  - StridePackages/.swiftpm
+
+opt_in_rules:
+  - empty_count
+  - explicit_init
+  - closure_spacing
+  - contains_over_first_not_nil
+  - fatal_error_message
+  - first_where
+  - force_unwrapping
+  - implicitly_unwrapped_optional
+  - overridden_super_call
+  - redundant_nil_coalescing
+  - sorted_first_last
+  - unneeded_parentheses_in_closure_argument
+
+disabled_rules:
+  # Trailing-whitespace churn in multiline strings adds noise without value.
+  - trailing_whitespace
+
+force_unwrapping:
+  severity: error
+
+force_cast: error
+force_try: error
+
+line_length:
+  warning: 130
+  error: 160
+  ignores_comments: true
+  ignores_urls: true
+
+type_body_length:
+  warning: 300
+  error: 400
+
+file_length:
+  warning: 500
+  error: 700
+
+function_body_length:
+  warning: 50
+  error: 80
+
+identifier_name:
+  min_length: 2
+  excluded:
+    - x
+    - y
+    - id
+
+custom_rules:
+  no_manager_suffix:
+    name: "No Manager types"
+    regex: '\b(?:class|struct|enum|actor|protocol)\s+\w*Manager\b'
+    message: "CLAUDE.md rule 7: no *Manager types. Use Repository, Service, UseCase, or Policy."
+    severity: error

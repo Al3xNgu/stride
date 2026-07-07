@@ -1,0 +1,5 @@
+# Nested config for test targets. CLAUDE.md permits force-unwraps in tests
+# ("no force-unwraps outside tests"), so relax that rule here only.
+parent_config: ../../.swiftlint.yml
+disabled_rules:
+  - force_unwrapping
