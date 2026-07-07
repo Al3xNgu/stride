@@ -7,7 +7,7 @@ Orchestrator: execute in order within a phase. `[R]` = dispatch api-researcher f
 - [x] 0.1 Create `StridePackages` structure per ARCHITECTURE.md §14: DomainKit, DataKit, FeatureBuilder, FeatureLibrary, FeatureHistory, FeatureRecords, FeatureSettings, DesignSystem, TestSupport, with correct target dependencies (SPM must enforce the dependency rule). Empty placeholder types; `swift test` green.
 - [x] 0.2 SwiftLint config + CI workflow (build + `swift test` on PR).
 - [x] 0.3 [T] DomainKit entities: Workout, WorkoutSegment (sum type per §5), SegmentIntent, Goal, Target, Milestone, PersonalBest, CompletedRun, Split, SyncJob (+ state enum per §7), UserPreferences. Pure Swift, Equatable/Codable/Identifiable as appropriate.
-- [ ] 0.4 [T] Validation rules: ValidateWorkout policy (≥1 segment, interval reps ≥1, sane pace ranges, non-negative goals) with exhaustive tests.
+- [x] 0.4 [T] Validation rules: ValidateWorkout policy (≥1 segment, interval reps ≥1, sane pace ranges, non-negative goals) with exhaustive tests.
 - [x] 0.5 [R] RESEARCH: exact WorkoutKit surface for composing a custom running workout (warm-up/blocks/cool-down, goals, pace/HR/cadence alerts, display names + OS gates), validation errors, authorization states, and scheduling/removal APIs + limits. Output feeds 0.6 and 1.x.
 - [ ] 0.6 [R] SPIKE target: minimal hardcoded interval workout → authorize → schedule, behind a debug screen. Mark all `HARDWARE-VERIFY` points. **Human runs on device; findings go to RESEARCH-LOG before Phase 1.**
 
