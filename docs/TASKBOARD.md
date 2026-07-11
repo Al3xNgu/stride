@@ -14,7 +14,7 @@ Orchestrator: execute in order within a phase. `[R]` = dispatch api-researcher f
 ## Phase 1 — MVP
 
 ### Persistence
-- [ ] 1.1 [T] DomainKit ports: WorkoutRepository, RunHistoryRepository, WatchSyncService, PreferencesStore, Clock + TestSupport fakes for each.
+- [x] 1.1 [T] DomainKit ports: WorkoutRepository, RunHistoryRepository, WatchSyncService, PreferencesStore, Clock + TestSupport fakes for each.
 - [ ] 1.2 [T] DataKit SwiftData models + bidirectional mappers for Workout/Segments/SyncJob/PersonalBest/CompletedRun; SwiftDataWorkoutRepository. Round-trip mapper tests.
 - [ ] 1.3 UserDefaults-backed PreferencesStore (units, default paces).
 
