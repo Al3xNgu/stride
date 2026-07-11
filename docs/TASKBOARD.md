@@ -16,7 +16,7 @@ Orchestrator: execute in order within a phase. `[R]` = dispatch api-researcher f
 ### Persistence
 - [x] 1.1 [T] DomainKit ports: WorkoutRepository, RunHistoryRepository, WatchSyncService, PreferencesStore, Clock + TestSupport fakes for each.
 - [x] 1.2 [T] DataKit SwiftData models + bidirectional mappers for Workout/Segments/SyncJob/PersonalBest/CompletedRun; SwiftDataWorkoutRepository. Round-trip mapper tests.
-- [ ] 1.3 UserDefaults-backed PreferencesStore (units, default paces).
+- [x] 1.3 UserDefaults-backed PreferencesStore (units, default paces).
 
 ### Builder feature
 - [ ] 1.4 FeatureBuilder: segment list editor — add from palette, reorder, edit, duplicate, delete; distance/time/open goals; pace target UI; interval block editor (work/recovery/reps). ViewModel against fakes. [T]
