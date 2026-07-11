@@ -46,6 +46,10 @@ let package = Package(
             name: "TestSupport",
             dependencies: ["DomainKit"]
         ),
+        .testTarget(
+            name: "TestSupportTests",
+            dependencies: ["TestSupport", "DomainKit"]
+        ),
 
         // MARK: - Feature modules (DomainKit + DesignSystem only, never DataKit)
         .target(
