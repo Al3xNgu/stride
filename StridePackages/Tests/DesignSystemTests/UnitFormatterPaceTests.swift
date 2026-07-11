@@ -104,4 +104,40 @@ struct UnitFormatterPaceTests {
         let fromNormalized = UnitFormatter.secondsPerMeter(minutes: 5, seconds: 5, unit: .kilometers)
         #expect(fromOverflow == fromNormalized)
     }
+
+    // MARK: - paceComponents (task 1.4's reverse split)
+
+    @Test("paceComponents splits an exact 5:00/km pace into (5, 0)")
+    func paceComponentsExactKilometers() {
+        let pace = UnitFormatter.secondsPerMeter(minutes: 5, seconds: 0, unit: .kilometers)
+        let components = UnitFormatter.paceComponents(secondsPerMeter: pace, unit: .kilometers)
+        #expect(components.minutes == 5)
+        #expect(components.seconds == 0)
+    }
+
+    @Test("paceComponents splits an exact 8:03/mi pace into (8, 3)")
+    func paceComponentsExactMiles() {
+        let pace = UnitFormatter.secondsPerMeter(minutes: 8, seconds: 3, unit: .miles)
+        let components = UnitFormatter.paceComponents(secondsPerMeter: pace, unit: .miles)
+        #expect(components.minutes == 8)
+        #expect(components.seconds == 3)
+    }
+
+    @Test("paceComponents round-trips through secondsPerMeter for an arbitrary pace")
+    func paceComponentsRoundTrip() {
+        let original = UnitFormatter.secondsPerMeter(minutes: 4, seconds: 32, unit: .kilometers)
+        let components = UnitFormatter.paceComponents(secondsPerMeter: original, unit: .kilometers)
+        let rebuilt = UnitFormatter.secondsPerMeter(minutes: components.minutes, seconds: components.seconds, unit: .kilometers)
+        #expect(rebuilt == original)
+    }
+
+    @Test(
+        "paceComponents returns zero for invalid input",
+        arguments: [0.0, -0.3, .nan, .infinity, -.infinity, .greatestFiniteMagnitude]
+    )
+    func paceComponentsInvalidInput(_ value: Double) {
+        let components = UnitFormatter.paceComponents(secondsPerMeter: value, unit: .kilometers)
+        #expect(components.minutes == 0)
+        #expect(components.seconds == 0)
+    }
 }

@@ -40,25 +40,52 @@ public enum UnitFormatter {
         unit: DisplayDistanceUnit,
         locale: Locale = .current
     ) -> String {
-        guard secondsPerMeter.isFinite, secondsPerMeter > 0 else {
-            return "\(timePlaceholder) \(paceUnitSuffix(unit))"
-        }
-
-        let totalSecondsPerUnit = secondsPerMeter * metersPerUnit(unit)
-        // The upper bound also guards `Int(_:)`, which traps (rather than
-        // saturating) on finite doubles beyond Int.max.
-        guard totalSecondsPerUnit.isFinite, totalSecondsPerUnit < Double(Int.max) else {
-            return "\(timePlaceholder) \(paceUnitSuffix(unit))"
-        }
-
-        let roundedTotalSeconds = Int(totalSecondsPerUnit.rounded())
-        guard roundedTotalSeconds >= 0 else {
+        guard let roundedTotalSeconds = roundedTotalSecondsPerUnit(secondsPerMeter: secondsPerMeter, unit: unit) else {
             return "\(timePlaceholder) \(paceUnitSuffix(unit))"
         }
 
         let minutes = roundedTotalSeconds / 60
         let seconds = roundedTotalSeconds % 60
         return "\(minutes):\(twoDigits(seconds)) \(paceUnitSuffix(unit))"
+    }
+
+    /// Splits a pace (seconds-per-meter, the domain's internal
+    /// representation) into whole minutes and seconds per `unit` — the
+    /// inverse of `secondsPerMeter(minutes:seconds:unit:)` — for seeding
+    /// minute/second stepper controls when editing an existing pace target
+    /// (task 1.4's pace-range editor).
+    ///
+    /// - Returns: `(minutes: 0, seconds: 0)` for input that cannot be
+    ///   represented (zero, negative, `NaN`, infinite, or too large for
+    ///   `Int`), matching `paceString`'s placeholder behavior.
+    public static func paceComponents(secondsPerMeter: Double, unit: DisplayDistanceUnit) -> (minutes: Int, seconds: Int) {
+        guard let roundedTotalSeconds = roundedTotalSecondsPerUnit(secondsPerMeter: secondsPerMeter, unit: unit) else {
+            return (0, 0)
+        }
+        return (roundedTotalSeconds / 60, roundedTotalSeconds % 60)
+    }
+
+    /// Shared rounding/validation logic for `paceString` and `paceComponents`:
+    /// converts a seconds-per-meter pace into whole rounded seconds-per-unit,
+    /// or `nil` if `secondsPerMeter` is zero, negative, `NaN`, infinite, or
+    /// too large to round into an `Int` without trapping.
+    private static func roundedTotalSecondsPerUnit(secondsPerMeter: Double, unit: DisplayDistanceUnit) -> Int? {
+        guard secondsPerMeter.isFinite, secondsPerMeter > 0 else {
+            return nil
+        }
+
+        let totalSecondsPerUnit = secondsPerMeter * metersPerUnit(unit)
+        // The upper bound also guards `Int(_:)`, which traps (rather than
+        // saturating) on finite doubles beyond Int.max.
+        guard totalSecondsPerUnit.isFinite, totalSecondsPerUnit < Double(Int.max) else {
+            return nil
+        }
+
+        let rounded = Int(totalSecondsPerUnit.rounded())
+        guard rounded >= 0 else {
+            return nil
+        }
+        return rounded
     }
 
     /// Converts a pace expressed as minutes and seconds per unit distance into
