@@ -139,14 +139,19 @@ findings inline below each item.
 1. **Environment readout** (auto-runs on appear; also has a manual refresh button) → confirms
    HARDWARE-VERIFY(2): runtime `maxAllowedScheduledWorkoutCount` value + the 7-day scheduling
    window (confirm expiry behavior by leaving an entry scheduled past the window, separately).
-   - Finding:
+   - Finding (device, iPhone 13 Pro Max + paired Watch, 2026-07-10): `maxAllowedScheduledWorkoutCount`
+     = **50** — NOT the 15 stated in WWDC23-10016; treat 50 as the runtime truth and always read the
+     property, never hardcode. `isSupported` = true. 7-day window/expiry behavior still unconfirmed
+     (needs an entry left in place past the window — low priority, revisit opportunistically).
 2. **Authorize button** → confirms HARDWARE-VERIFY(6): denied-state recovery path (exact Watch-app
    on iPhone location/deep link, if any).
-   - Finding:
+   - Finding (device, 2026-07-10): authorization granted on first request; happy path works.
+     Denied-state recovery path NOT exercised (user allowed) — HARDWARE-VERIFY(6) stays open until
+     someone tests a denial; non-blocking for Phase 1 (gate on `authorizationState` + instructions).
 3. **Pre-flight checks button** (`supportsActivity` / `supportsGoal` / `supportsAlert`) → sanity
    check only, not a numbered HARDWARE-VERIFY item, but log the boolean results here in case any
    come back `false` for the hardcoded plan.
-   - Finding:
+   - Finding (device, 2026-07-10): all `supports*` checks returned true for the hardcoded plan.
 4. **Serialize button** → HARDWARE-VERIFY(1) is **ANSWERED in simulator** (see the 2026-07-10
    "spike crash root-caused" section below) — bad goal values trap at composition, they do not
    throw at serialization. The button now only confirms the valid plan serializes on device.
@@ -158,22 +163,41 @@ findings inline below each item.
    right after). Also note: HARDWARE-VERIFY(5) (`HKWorkout.workoutPlan` round-trip) can only be
    checked after actually running this workout on-wrist and syncing to Health — separate, later
    check, not blocking this spike.
-   - Finding:
+   - Finding (device, 2026-07-10): schedule at tomorrow 07:00 succeeded; `scheduledWorkouts`
+     count = 1 immediately after, and the workout **appeared in the Watch's Workout app**.
+     Unpaired-watch behavior NOT tested (watch was paired) — HARDWARE-VERIFY(4) stays open;
+     mitigate with the `isSupported` gate until tested.
 6. **Schedule again tomorrow 18:00 button** (same `plan.id`, different time) → confirms
    HARDWARE-VERIFY(3): replace vs duplicate when scheduling a reused `id`. Compare the
    `scheduledWorkouts` dump from step 5 against the dump after this step.
-   - Finding:
+   - Finding (device, 2026-07-10, human-confirmed + Xcode console): **REPLACE.** Re-scheduling the
+     same `plan.id` at a different `DateComponents` left `scheduledWorkouts` count = 1, with only
+     the hour-18 entry present (console: `plan.id=C5CCA7BC-… hour: 18 … complete=false`). The
+     "stale re-send" flow (ARCHITECTURE §7) can therefore be a single `schedule(new)` call reusing
+     the id — no explicit `remove(old)` needed when the plan id is stable. Keep remove-then-schedule
+     as belt-and-braces if the id changes.
 7. **Remove 07:00 / Remove 18:00 / Remove ALL buttons** → sanity check that `remove(_:at:)` /
    `removeAllWorkouts()` reflect correctly in the `scheduledWorkouts` dump; not independently
    numbered but supports interpreting steps 5–6.
-   - Finding:
+   - Finding (device, 2026-07-10): `removeAllWorkouts()` dropped count to 0 (verified twice in
+     console), and the removal **propagated to the Watch** correctly.
 8. **Preview toggle button** → confirms HARDWARE-VERIFY(7): whether `workoutPreview` is required
    before every send or optional after first use, and general fidelity of the rendered preview for
    the hardcoded plan.
-   - Finding:
+   - Finding (device, 2026-07-10): preview sheet rendered the plan correctly. Scheduling succeeded
+     independent of the preview — `workoutPreview` is **optional** in the send flow (UX choice, not
+     an API requirement).
 
 Also record general notes on HARDWARE-VERIFY(8) (pace-alert `.current` feel outdoors for the
 2.98–3.35 m/s work-interval range) while actually running the composed workout, if time allows.
+→ **DEFERRED 2026-07-10** along with HARDWARE-VERIFY(5) (`HKWorkout.workoutPlan` round-trip): the
+actual on-wrist run is on hold per the human. Neither blocks Phase 1 persistence/builder work;
+HV(5) matters from task 1.10 onward (attribution) — schedule a run before then.
+
+**Session observations (orchestrator, from Xcode console):** ~6 minutes after the last interaction,
+iOS terminated the suspended app with a memory kill ("code 9: Terminated due to memory issue",
+~28 MB) — consistent with routine jetsam of a suspended debug build, not a leak; no action taken.
+Device: iPhone 13 Pro Max, iOS 26.x, Xcode 26.6 debug build.
 
 ---
 
