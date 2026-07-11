@@ -34,6 +34,10 @@ let package = Package(
             name: "DataKit",
             dependencies: ["DomainKit"]
         ),
+        .testTarget(
+            name: "DataKitTests",
+            dependencies: ["DataKit", "DomainKit", "TestSupport"]
+        ),
 
         // MARK: - Design System (leaf UI module; no DomainKit dependency)
         .target(
