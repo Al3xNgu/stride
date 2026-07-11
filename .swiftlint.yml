@@ -4,7 +4,7 @@
 included:
   - StridePackages/Sources
   - StridePackages/Tests
-  - StrideApp
+  - Stride
 
 excluded:
   - StridePackages/.build
