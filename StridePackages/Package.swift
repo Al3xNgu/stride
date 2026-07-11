@@ -44,6 +44,10 @@ let package = Package(
             name: "DesignSystem",
             dependencies: []
         ),
+        .testTarget(
+            name: "DesignSystemTests",
+            dependencies: ["DesignSystem"]
+        ),
 
         // MARK: - Test Support (in-memory fakes of DomainKit ports)
         .target(

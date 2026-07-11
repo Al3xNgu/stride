@@ -21,7 +21,7 @@ Orchestrator: execute in order within a phase. `[R]` = dispatch api-researcher f
 ### Builder feature
 - [ ] 1.4 FeatureBuilder: segment list editor — add from palette, reorder, edit, duplicate, delete; distance/time/open goals; pace target UI; interval block editor (work/recovery/reps). ViewModel against fakes. [T]
 - [ ] 1.5 Live validation surfacing + workout summary (total distance/time) in builder.
-- [ ] 1.6 DesignSystem: UnitFormatter (pace min/mi ↔ min/km, distance), tokens, shared components used by 1.4.
+- [x] 1.6 DesignSystem: UnitFormatter (pace min/mi ↔ min/km, distance), tokens, shared components used by 1.4.
 
 ### Watch sync
 - [ ] 1.7 [R][T] DataKit WorkoutKitSyncService: domain → composition mapper (use RESEARCH-LOG surface only), authorization flow, schedule/remove, granular error mapping to domain errors.
