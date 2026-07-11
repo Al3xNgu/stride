@@ -82,7 +82,7 @@ Running-relevant alert types (each has a value init + a `WorkoutAlert` static-fa
 - `WorkoutPlan.dataRepresentation` / `init(from:Data)` give a stable serialization to persist the plan alongside our SyncJob and match by `id`.
 
 ### Hardware-verify list (feeds Task 0.6 spike + human checkpoint)
-1. Concrete thrown **validation error type** from `WorkoutPlan.dataRepresentation` / scheduling, and its granularity (§4).
+1. Concrete thrown **validation error type** from `WorkoutPlan.dataRepresentation` / scheduling, and its granularity (§4). → CLOSED for value errors 2026-07-10 (they trap at composition, not throw); no throw path observed yet — see the root-cause section below.
 2. Runtime value of `WorkoutScheduler.maxAllowedScheduledWorkoutCount` and confirmation of the **7-day-ahead / 7-day-past** window + exact expiry behavior (§6).
 3. **Replace vs duplicate** when scheduling a plan with a reused `id` (or same plan at same DateComponents) — decides "stale re-send" implementation (§6, ARCHITECTURE §7).
 4. Where `StateError.watchNotPaired` / `.workoutApplicationNotInstalled` actually surface (schedule is non-throwing) — i.e. how "no paired watch" is detected pre-send (§6).
@@ -147,10 +147,11 @@ findings inline below each item.
    check only, not a numbered HARDWARE-VERIFY item, but log the boolean results here in case any
    come back `false` for the hardcoded plan.
    - Finding:
-4. **Serialize button** → confirms HARDWARE-VERIFY(1): concrete thrown validation error type (from
-   `type(of: error)`), its description, and NSError domain/code, for both the valid plan (expected
-   to succeed) and the deliberately-broken (-100 m distance) plan (expected to throw).
-   - Finding:
+4. **Serialize button** → HARDWARE-VERIFY(1) is **ANSWERED in simulator** (see the 2026-07-10
+   "spike crash root-caused" section below) — bad goal values trap at composition, they do not
+   throw at serialization. The button now only confirms the valid plan serializes on device.
+   - Finding (simulator, 2026-07-10): composition traps on goal values ≤ 0; valid plan serialized
+     to 219 bytes; empty / zero-iteration compositions serialize without error.
 5. **Schedule tomorrow 07:00 button** → confirms HARDWARE-VERIFY(4): where/whether
    `StateError.watchNotPaired` / `.workoutApplicationNotInstalled` surface, or whether an unpaired
    watch causes `schedule` to silently no-op (compare against `scheduledWorkouts` dump logged
@@ -173,3 +174,22 @@ findings inline below each item.
 
 Also record general notes on HARDWARE-VERIFY(8) (pace-alert `.current` feel outdoors for the
 2.98–3.35 m/s work-interval range) while actually running the composed workout, if time allows.
+
+---
+
+## 2026-07-10 — Task 0.6 spike crash root-caused: WorkoutKit traps on non-positive goal values (HARDWARE-VERIFY(1) answered)
+
+**Reporter:** orchestrator. **Trigger:** human's first device run crashed on opening the spike screen with `Fatal error: requiresNonZeroValue`.
+
+**Root cause (verified, reproduced in iOS 26.5 simulator via a standalone binary spawned with `simctl`):**
+- `CustomWorkout.init` **traps** — `WorkoutKit/CustomWorkout.swift:139: Fatal error: requiresNonZeroValue` — when any contained step carries a goal value **≤ 0** (both `-100` and `0` meters reproduce it). The spike's deliberately-broken plan (`.distance(-100, .meters)`, composed eagerly in the model's `init` to probe serialization errors) killed the screen before it rendered.
+- `WorkoutStep.init` / `WorkoutGoal` do **not** validate — the bad value passes composition of the step and only traps when wrapped in `CustomWorkout`.
+
+**Consequences for §4 "Validation" of the 0.5 entry (supersedes the "granular thrown errors" theory for value errors):**
+- Value validation is a **runtime precondition at composition, not a thrown error at export**. `WorkoutPlan.dataRepresentation` was never reached.
+- Conversely, semantically-empty compositions serialize **without error** in simulator: an empty `CustomWorkout` (no warmup/blocks/cooldown) → 57 bytes; a block with `iterations: 0` → 87 bytes. WorkoutKit does not enforce "≥ 1 segment" or "reps ≥ 1" at composition or export — **Stride's `ValidateWorkoutPolicy` is the only guard for those.**
+- The valid hardcoded spike plan serializes fine in simulator (219 bytes) — serialization itself is not hardware-gated.
+
+**Hard requirement for task 1.7 (domain → WorkoutKit mapper):** the mapper MUST refuse (typed domain error) any workout whose goal values are ≤ 0 *before* touching `CustomWorkout.init` — a bad value is a process kill, not a catchable error. `ValidateWorkoutPolicy` already rejects these; the mapper must still guard defensively since a trap is unrecoverable.
+
+**Spike change:** broken-plan composition removed from the spike (crash fix); serialize button now round-trips the valid plan only. HARDWARE-VERIFY(1) is closed for value errors (no throw path from `dataRepresentation` has been observed in any tested case); items 2–8 remain for the device run.

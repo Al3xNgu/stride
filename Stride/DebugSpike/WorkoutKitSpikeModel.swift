@@ -37,9 +37,6 @@ final class WorkoutKitSpikeModel {
     /// same `WorkoutPlan.id` is reused across schedule / re-schedule / remove calls.
     let plan: WorkoutPlan
 
-    /// Deliberately-invalid variant (negative distance goal) used only to probe the serialize path.
-    let brokenPlan: WorkoutPlan
-
     /// The exact `DateComponents` used for the "tomorrow 07:00" schedule call. `remove(_:at:)`
     /// requires passing back the same components, so we keep them here rather than recomputing.
     private(set) var morningDateComponents: DateComponents?
@@ -59,9 +56,8 @@ final class WorkoutKitSpikeModel {
 
     init() {
         plan = WorkoutPlan(.custom(Self.makeSpikeWorkout()))
-        brokenPlan = WorkoutPlan(.custom(Self.makeBrokenWorkout()))
         logEntries = []
-        log("Model initialized. plan.id=\(plan.id) brokenPlan.id=\(brokenPlan.id)")
+        log("Model initialized. plan.id=\(plan.id)")
     }
 
     private func log(_ message: String) {
@@ -126,17 +122,13 @@ final class WorkoutKitSpikeModel {
         )
     }
 
-    private static func makeBrokenWorkout() -> CustomWorkout {
-        // Deliberately invalid: a negative distance goal, composed only to try to force a granular
-        // validation error out of `WorkoutPlan.dataRepresentation` (RESEARCH-LOG §4 / HARDWARE-VERIFY(1)).
-        let brokenWarmup = WorkoutStep(goal: .distance(-100, .meters))
-        return CustomWorkout(
-            activity: .running,
-            location: .outdoor,
-            displayName: "Stride Spike (broken)",
-            warmup: brokenWarmup
-        )
-    }
+    // NOTE (HARDWARE-VERIFY(1) — ANSWERED in simulator, 2026-07-10, see RESEARCH-LOG): there is no
+    // "broken plan" here on purpose. `CustomWorkout.init` traps with
+    // `Fatal error: requiresNonZeroValue` (CustomWorkout.swift:139) when any step carries a goal
+    // value <= 0 — validation of bad values is a runtime precondition at composition, NOT a thrown
+    // error at serialization. An earlier revision composed a -100 m plan eagerly and crashed this
+    // screen on open. Domain-level ValidateWorkoutPolicy is the real guard; the 1.7 mapper must
+    // never forward non-positive goal values to WorkoutKit.
 
     func runPreflightChecks() {
         log("--- Pre-flight capability checks (static supports* checks) ---")
@@ -174,21 +166,17 @@ final class WorkoutKitSpikeModel {
 
     func serializePlan() {
         log("--- Serializing spike plan ---")
-        serialize(plan, label: "spike plan")
-        log("--- Serializing deliberately-broken plan (distance goal = -100 meters) ---")
-        serialize(brokenPlan, label: "broken plan")
-    }
-
-    private func serialize(_ plan: WorkoutPlan, label: String) {
+        // HARDWARE-VERIFY(1) is answered (see note above): bad values trap at composition, and
+        // semantically-empty compositions (no steps / zero iterations) serialize without error in
+        // simulator. This button remains only to confirm the valid plan round-trips on device.
         do {
             let data = try plan.dataRepresentation
-            log("\(label): dataRepresentation succeeded, \(data.count) bytes.")
+            log("spike plan: dataRepresentation succeeded, \(data.count) bytes.")
         } catch {
-            // HARDWARE-VERIFY(1): capture the concrete thrown validation error type + granularity.
-            log("\(label): dataRepresentation threw. type(of: error) = \(type(of: error))")
-            log("\(label): error description = \(error.localizedDescription)")
+            log("spike plan: dataRepresentation threw. type(of: error) = \(type(of: error))")
+            log("spike plan: error description = \(error.localizedDescription)")
             let nsError = error as NSError
-            log("\(label): NSError domain=\(nsError.domain) code=\(nsError.code) userInfo=\(nsError.userInfo)")
+            log("spike plan: NSError domain=\(nsError.domain) code=\(nsError.code) userInfo=\(nsError.userInfo)")
         }
     }
 

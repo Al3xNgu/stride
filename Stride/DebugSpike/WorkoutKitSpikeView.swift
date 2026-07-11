@@ -38,7 +38,7 @@ struct WorkoutKitSpikeView: View {
             }
 
             Section("4. Serialize") {
-                Button("Serialize plan + broken plan") {
+                Button("Serialize plan") {
                     model.serializePlan()
                 }
             }
