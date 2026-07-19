@@ -29,7 +29,7 @@ Orchestrator: execute in order within a phase. `[R]` = dispatch api-researcher f
 - [x] 1.9 FeatureLibrary: workout list, sync badges from SyncJob state, Send-to-Watch + schedule-by-date flows, failure reasons UI.
 
 ### Health ingestion & records
-- [ ] 1.10 [R] RESEARCH: HealthKit anchored query + background delivery patterns for running workouts; distance-sample granularity for split derivation; completed-workout ↔ plan linkage reliability.
+- [x] 1.10 [R] RESEARCH: HealthKit anchored query + background delivery patterns for running workouts; distance-sample granularity for split derivation; completed-workout ↔ plan linkage reliability.
 - [ ] 1.11 [T] DataKit HealthKitRunHistoryRepository: read-only auth (workouts, distance, HR), anchored incremental fetch with persisted anchor, HKWorkout → CompletedRun projection, split derivation from cumulative distance samples.
 - [ ] 1.12 [T] IngestCompletedRunsUseCase: idempotent upsert by UUID, deletion tombstones, schedule-window attribution heuristic, triggers PR recalc.
 - [ ] 1.13 [T] PersonalBestPolicy: milestone config (1mi/5K/10K/Half/Marathon), tolerance rules, supersede/archive. Exhaustive tests — this is the flagship pure-logic suite.
