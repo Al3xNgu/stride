@@ -11,10 +11,19 @@ import Observation
 /// Apple-framework/non-deterministic access goes through a `DomainKit/Ports`
 /// protocol).
 ///
-/// Full validation-summary UI (total distance/time, inline error rendering)
-/// is task 1.5's scope; this view model only exposes `validationIssues` so
-/// the view can badge them (`docs/ARCHITECTURE.md` §7: "live validation... on
-/// every builder edit").
+/// Live validation and the planned-totals summary (task 1.5) are exposed as
+/// `validationIssues` and `summary`, both recomputed on every access from
+/// the pure `ValidateWorkoutPolicy`/`WorkoutSummaryPolicy` so they are
+/// always current after a mutating call, without this view model needing to
+/// cache and invalidate anything itself (`docs/ARCHITECTURE.md` §7: "live
+/// validation... on every builder edit").
+///
+/// Per `docs/ARCHITECTURE.md` §3.1/§7, live validation here is
+/// builder-local, inline surfacing — it does not gate `save()`. Saving a
+/// draft with outstanding issues is intentionally allowed (a workout is
+/// "authored intent" that must be able to exist mid-edit); only
+/// `ScheduleWorkoutUseCase`'s pre-flight "Send to Watch" validation (a
+/// future task) is a hard gate.
 @MainActor
 @Observable
 public final class BuilderViewModel {
@@ -44,6 +53,40 @@ public final class BuilderViewModel {
     /// delete) without the view model needing to cache and invalidate it.
     public var validationIssues: [ValidationIssue] {
         ValidateWorkoutPolicy.validate(workout)
+    }
+
+    /// The workout's planned totals (distance, duration, open-goal step
+    /// count), recomputed from `WorkoutSummaryPolicy` on every access —
+    /// always current after a mutating call, same as `validationIssues`.
+    public var summary: WorkoutSummary {
+        WorkoutSummaryPolicy.summarize(workout)
+    }
+
+    /// Validation issues anchored to the workout as a whole (`.workout`
+    /// locator, e.g. "no segments" or "empty name") rather than to a
+    /// specific segment — for a workout-level issues section distinct from
+    /// per-row badges.
+    public var workoutLevelIssues: [ValidationIssue] {
+        validationIssues.filter { $0.locator == .workout }
+    }
+
+    /// Every validation issue anchored to the top-level segment with `id`,
+    /// either directly (`.segment(id:)`, e.g. an interval block's own
+    /// repetitions/step-count rules) or nested inside it as one of its
+    /// interval steps (`.intervalStep(blockID:stepID:)`) — so the builder's
+    /// segment list can badge a row with every issue that lives underneath
+    /// it, without the view needing to know `ValidationLocator`'s cases.
+    public func issues(forSegmentID id: UUID) -> [ValidationIssue] {
+        validationIssues.filter { issue in
+            switch issue.locator {
+            case .workout:
+                return false
+            case let .segment(segmentID):
+                return segmentID == id
+            case let .intervalStep(blockID, _):
+                return blockID == id
+            }
+        }
     }
 
     /// The workout's user-facing name, exposed as a settable proxy onto

@@ -31,13 +31,17 @@ public struct BuilderView: View {
                 TextField("Workout name", text: $viewModel.name)
             }
 
-            if !viewModel.validationIssues.isEmpty {
+            Section("Summary") {
+                Text(summaryText)
+                    .foregroundStyle(Colors.secondaryText)
+            }
+
+            if !viewModel.workoutLevelIssues.isEmpty {
                 Section {
-                    Label(
-                        "\(viewModel.validationIssues.count) issue(s) to fix",
-                        systemImage: "exclamationmark.triangle"
-                    )
-                    .foregroundStyle(Colors.warning)
+                    ForEach(viewModel.workoutLevelIssues, id: \.self) { issue in
+                        Label(ValidationMessagePresenter.message(for: issue), systemImage: "exclamationmark.triangle")
+                            .foregroundStyle(Colors.warning)
+                    }
                 }
             }
 
@@ -51,7 +55,11 @@ public struct BuilderView: View {
                     NavigationLink {
                         editor(for: segment)
                     } label: {
-                        SegmentRowView(segment: segment, displayUnit: displayUnit)
+                        SegmentRowView(
+                            segment: segment,
+                            displayUnit: displayUnit,
+                            issues: viewModel.issues(forSegmentID: segment.id)
+                        )
                     }
                     .swipeActions(edge: .trailing) {
                         Button(role: .destructive) {
@@ -126,11 +134,39 @@ public struct BuilderView: View {
             SegmentEditorView(step: stepBinding(for: segment.id), displayUnit: displayUnit)
         case .intervalBlock:
             IntervalBlockEditorView(
+                blockID: segment.id,
                 steps: intervalStepsBinding(blockID: segment.id),
                 repetitions: intervalRepetitionsBinding(blockID: segment.id),
-                displayUnit: displayUnit
+                displayUnit: displayUnit,
+                issues: viewModel.issues(forSegmentID: segment.id)
             )
         }
+    }
+
+    /// An honest, presentation-only rendering of `viewModel.summary`: total
+    /// distance and/or duration (whichever are non-zero), plus an open-goal
+    /// segment count annotation so open segments are never silently omitted
+    /// from the total (task 1.5 design notes), e.g. "5.20 km + 12:00 + 2
+    /// open segments" (pluralized).
+    private var summaryText: String {
+        let summary = viewModel.summary
+        var parts: [String] = []
+
+        if summary.totalDistanceMeters > 0 {
+            parts.append(UnitFormatter.distanceString(meters: summary.totalDistanceMeters, unit: displayUnit))
+        }
+        if summary.totalDurationSeconds > 0 {
+            parts.append(UnitFormatter.durationString(seconds: summary.totalDurationSeconds))
+        }
+        if summary.hasOpenGoalSteps {
+            let noun = summary.openGoalStepCount == 1 ? "segment" : "segments"
+            parts.append("\(summary.openGoalStepCount) open \(noun)")
+        }
+
+        guard !parts.isEmpty else {
+            return "No planned segments yet"
+        }
+        return parts.joined(separator: " + ")
     }
 
     /// A binding to the `.step` segment with `id`, reading through to the

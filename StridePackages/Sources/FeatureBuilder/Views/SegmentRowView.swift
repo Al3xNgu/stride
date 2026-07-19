@@ -4,9 +4,15 @@ import SwiftUI
 
 /// A single row summarizing a `WorkoutSegment` in the builder's list, or a
 /// single `SegmentStep` inside an interval block editor.
+///
+/// `issues` is every validation issue anchored to this segment (task 1.5;
+/// see `BuilderViewModel.issues(forSegmentID:)`), rendered as an inline
+/// badge listing each issue's presentation message so a runner can see
+/// *why* a row is flagged without opening its editor.
 struct SegmentRowView: View {
     let segment: WorkoutSegment
     let displayUnit: DisplayDistanceUnit
+    var issues: [ValidationIssue] = []
 
     var body: some View {
         switch segment {
@@ -17,6 +23,7 @@ struct SegmentRowView: View {
                 Text(summary(for: step))
                     .font(Typography.caption)
                     .foregroundStyle(Colors.secondaryText)
+                issuesBadge
             }
 
         case let .intervalBlock(_, steps, repetitions):
@@ -26,7 +33,21 @@ struct SegmentRowView: View {
                 Text("×\(repetitions) — \(steps.count) step(s)")
                     .font(Typography.caption)
                     .foregroundStyle(Colors.secondaryText)
+                issuesBadge
             }
+        }
+    }
+
+    @ViewBuilder
+    private var issuesBadge: some View {
+        if !issues.isEmpty {
+            VStack(alignment: .leading, spacing: Spacing.extraSmall) {
+                ForEach(issues, id: \.self) { issue in
+                    Label(ValidationMessagePresenter.message(for: issue), systemImage: "exclamationmark.triangle.fill")
+                }
+            }
+            .font(Typography.caption)
+            .foregroundStyle(Colors.warning)
         }
     }
 

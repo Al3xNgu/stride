@@ -14,24 +14,45 @@ public struct IntervalBlockEditorView: View {
     @Binding private var steps: [IntervalStep]
     @Binding private var repetitions: Int
     private let displayUnit: DisplayDistanceUnit
+    private let blockID: UUID
+    private let issues: [ValidationIssue]
 
     /// Creates an interval block editor.
     /// - Parameters:
+    ///   - blockID: The block's own stable id (`WorkoutSegment.intervalBlock`'s
+    ///     `id`), used to split `issues` into block-level vs. per-step badges.
     ///   - steps: A two-way binding to the block's interval steps.
     ///   - repetitions: A two-way binding to the block's repeat count.
     ///   - displayUnit: The unit distance/pace previews are shown in.
+    ///   - issues: Every validation issue anchored to this block, i.e. the
+    ///     result of `BuilderViewModel.issues(forSegmentID:)` for `blockID`
+    ///     (task 1.5). Defaults to empty for previews/callers that don't
+    ///     track validation.
     public init(
+        blockID: UUID,
         steps: Binding<[IntervalStep]>,
         repetitions: Binding<Int>,
-        displayUnit: DisplayDistanceUnit
+        displayUnit: DisplayDistanceUnit,
+        issues: [ValidationIssue] = []
     ) {
+        self.blockID = blockID
         self._steps = steps
         self._repetitions = repetitions
         self.displayUnit = displayUnit
+        self.issues = issues
     }
 
     public var body: some View {
         Form {
+            if !blockLevelIssues.isEmpty {
+                Section {
+                    ForEach(blockLevelIssues, id: \.self) { issue in
+                        Label(ValidationMessagePresenter.message(for: issue), systemImage: "exclamationmark.triangle")
+                            .foregroundStyle(Colors.warning)
+                    }
+                }
+            }
+
             Section("Repetitions") {
                 Stepper(value: $repetitions, in: 1...50) {
                     Text("Repeat ×\(repetitions)")
@@ -43,7 +64,11 @@ public struct IntervalBlockEditorView: View {
                     NavigationLink {
                         SegmentEditorView(step: workStepBinding, displayUnit: displayUnit)
                     } label: {
-                        SegmentRowView(segment: .step(workStepBinding.wrappedValue), displayUnit: displayUnit)
+                        SegmentRowView(
+                            segment: .step(workStepBinding.wrappedValue),
+                            displayUnit: displayUnit,
+                            issues: stepIssues(stepID: workStepBinding.wrappedValue.id)
+                        )
                     }
                 }
             }
@@ -53,7 +78,11 @@ public struct IntervalBlockEditorView: View {
                     NavigationLink {
                         SegmentEditorView(step: recoveryStepBinding, displayUnit: displayUnit)
                     } label: {
-                        SegmentRowView(segment: .step(recoveryStepBinding.wrappedValue), displayUnit: displayUnit)
+                        SegmentRowView(
+                            segment: .step(recoveryStepBinding.wrappedValue),
+                            displayUnit: displayUnit,
+                            issues: stepIssues(stepID: recoveryStepBinding.wrappedValue.id)
+                        )
                     }
                 }
             }
@@ -67,6 +96,28 @@ public struct IntervalBlockEditorView: View {
 
     private var recoveryStepBinding: Binding<SegmentStep>? {
         stepBinding(purpose: .recovery)
+    }
+
+    /// Issues anchored directly to the block itself (e.g. non-positive
+    /// repetitions, no steps), rather than to one of its inner steps.
+    private var blockLevelIssues: [ValidationIssue] {
+        issues.filter { issue in
+            if case let .segment(segmentID) = issue.locator {
+                return segmentID == blockID
+            }
+            return false
+        }
+    }
+
+    /// Issues anchored to the inner step with `stepID` via
+    /// `ValidationLocator.intervalStep(blockID:stepID:)`.
+    private func stepIssues(stepID: UUID) -> [ValidationIssue] {
+        issues.filter { issue in
+            if case let .intervalStep(_, issueStepID) = issue.locator {
+                return issueStepID == stepID
+            }
+            return false
+        }
     }
 
     private func stepBinding(purpose: IntervalStepPurpose) -> Binding<SegmentStep>? {
@@ -98,7 +149,7 @@ private struct IntervalBlockEditorPreviewContainer: View {
     }
 
     var body: some View {
-        IntervalBlockEditorView(steps: $steps, repetitions: $repetitions, displayUnit: .kilometers)
+        IntervalBlockEditorView(blockID: UUID(), steps: $steps, repetitions: $repetitions, displayUnit: .kilometers)
     }
 }
 
