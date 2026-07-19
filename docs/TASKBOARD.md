@@ -24,7 +24,7 @@ Orchestrator: execute in order within a phase. `[R]` = dispatch api-researcher f
 - [x] 1.6 DesignSystem: UnitFormatter (pace min/mi ↔ min/km, distance), tokens, shared components used by 1.4.
 
 ### Watch sync
-- [ ] 1.7 [R][T] DataKit WorkoutKitSyncService: domain → composition mapper (use RESEARCH-LOG surface only), authorization flow, schedule/remove, granular error mapping to domain errors.
+- [x] 1.7 [R][T] DataKit WorkoutKitSyncService: domain → composition mapper (use RESEARCH-LOG surface only), authorization flow, schedule/remove, granular error mapping to domain errors.
 - [ ] 1.8 [T] SyncCoordinator actor + ScheduleWorkoutUseCase implementing the §7 state machine: pending→syncing→synced/failed, retry with backoff, stale-on-edit, foreground reconciliation against scheduled plans.
 - [ ] 1.9 FeatureLibrary: workout list, sync badges from SyncJob state, Send-to-Watch + schedule-by-date flows, failure reasons UI.
 

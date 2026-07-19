@@ -217,3 +217,14 @@ Device: iPhone 13 Pro Max, iOS 26.x, Xcode 26.6 debug build.
 **Hard requirement for task 1.7 (domain → WorkoutKit mapper):** the mapper MUST refuse (typed domain error) any workout whose goal values are ≤ 0 *before* touching `CustomWorkout.init` — a bad value is a process kill, not a catchable error. `ValidateWorkoutPolicy` already rejects these; the mapper must still guard defensively since a trap is unrecoverable.
 
 **Spike change:** broken-plan composition removed from the spike (crash fix); serialize button now round-trips the valid plan only. HARDWARE-VERIFY(1) is closed for value errors (no throw path from `dataRepresentation` has been observed in any tested case); items 2–8 remain for the device run.
+
+---
+
+## 2026-07-19 — Task 1.7 corrections to the 0.5 alert-surface notes (verified against SDK swiftinterface)
+
+**Reporter:** orchestrator, relaying swift-builder findings read directly from the Xcode 26.6 `WorkoutKit.swiftinterface` while implementing the composition mapper.
+
+1. **Alert factory parameter shapes:** the `WorkoutAlert` static factories (`.speed(_:unit:metric:)`, `.speed(_:unit:metric:)` range variant, `.heartRate(_:unit:)`, `.cadence(_:unit:)`) take a bare `Double` / `ClosedRange<Double>` plus a `unit:` parameter — NOT `Measurement` values. (The underlying alert *types*' designated inits do take `Measurement`s; the factories are the convenience layer Stride uses.) §3 of the 0.5 entry conflated the two.
+2. **`.countPerMinute` location:** the `countPerMinute` static convenience is declared on `WorkoutAlertMetric`, not on `UnitFrequency` — leading-dot shorthand does not resolve it in the factory call; write `WorkoutAlertMetric.countPerMinute` explicitly.
+3. **WorkoutKit exists on macOS 15+** in this SDK (contrary to earlier working assumption). DataKit still isolates WorkoutKit behind `#if canImport(WorkoutKit)` + `@available(iOS 17.0, macOS 15.0, *)` because the package's macOS floor is 14 and the pure planner must stay testable everywhere.
+4. **No "unscheduled send" sentinel:** `WorkoutScheduler.schedule` requires `DateComponents`; a nil domain date is mapped to "now" in `WorkoutKitSyncService` — `// HARDWARE-VERIFY:` whether a now-dated schedule surfaces well in the Watch Workout app (open with HV-4/6).
