@@ -26,7 +26,7 @@ let package = Package(
         ),
         .testTarget(
             name: "DomainKitTests",
-            dependencies: ["DomainKit"]
+            dependencies: ["DomainKit", "TestSupport"]
         ),
 
         // MARK: - Data (Apple-framework adapters; depends on DomainKit only)
