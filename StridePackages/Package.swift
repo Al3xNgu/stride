@@ -72,6 +72,10 @@ let package = Package(
             name: "FeatureLibrary",
             dependencies: ["DomainKit", "DesignSystem"]
         ),
+        .testTarget(
+            name: "FeatureLibraryTests",
+            dependencies: ["FeatureLibrary", "TestSupport", "DomainKit"]
+        ),
         .target(
             name: "FeatureHistory",
             dependencies: ["DomainKit", "DesignSystem"]
