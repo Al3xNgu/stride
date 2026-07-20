@@ -241,6 +241,51 @@ public actor SyncCoordinator {
         return nil
     }
 
+    /// Transitions `workoutID`'s latest `SyncJob` to `.completedRunLinked`,
+    /// if and only if it is still `.synced` at the moment this actually runs
+    /// — the write `IngestCompletedRunsUseCase`'s schedule-window attribution
+    /// heuristic needs once it matches a completed run to a workout.
+    ///
+    /// **Why this lives on `SyncCoordinator`, not the ingestion use case
+    /// itself:** `SyncCoordinator` is the sole owner of every `SyncJob`
+    /// state transition (`docs/ARCHITECTURE.md` §6 component table); writing
+    /// `.completedRunLinked` directly from `IngestCompletedRunsUseCase` via
+    /// `WorkoutRepository`, outside this actor's per-workout lock, would
+    /// race with `reconcile()`/`markStaleIfEdited(workoutID:)`: a
+    /// pre-lock `.synced` snapshot taken by the ingestion path could
+    /// overwrite a `.stale` transition the coordinator just made,
+    /// silently losing the staleness marking (an illegal
+    /// `stale -> completedRunLinked` transition no caller intended).
+    /// Routing the write through this method — under the same lock,
+    /// re-fetching fresh state exactly as `staleIfEdited`/`reconcile`
+    /// phase 2/`retryDueJobs` do — closes that race.
+    ///
+    /// Returns `true` if the transition was applied, `false` if the job's
+    /// current state (re-fetched *inside* the lock) is no longer `.synced`
+    /// (e.g. concurrently marked `.stale`, or no job/workout exists at all)
+    /// — in which case nothing is persisted. Callers should still record
+    /// their own attribution (e.g. `CompletedRun.workoutID`) regardless of
+    /// this return value: the run-side attribution decision is independent
+    /// of whether this bookkeeping transition happened to land.
+    @discardableResult
+    public func linkCompletedRun(workoutID: UUID) async throws -> Bool {
+        await acquireLock(for: workoutID)
+        return try await withLockReleasedOnReturn(workoutID: workoutID) {
+            // Re-fetch inside the lock: any snapshot the caller took before
+            // acquiring it may be stale by the time we actually run (the
+            // same reasoning as `staleIfEdited`'s and `reconcile`'s doc
+            // comments).
+            guard var current = try await self.repository.fetchLatestSyncJob(workoutID: workoutID),
+                  current.state == .synced else {
+                return false
+            }
+            current.state = .completedRunLinked
+            current.updatedAt = self.clock.now()
+            try await self.repository.saveSyncJob(current)
+            return true
+        }
+    }
+
     // MARK: - Private
 
     private enum StaleCheckOutcome {
