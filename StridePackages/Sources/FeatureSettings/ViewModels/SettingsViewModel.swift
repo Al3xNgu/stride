@@ -4,9 +4,8 @@ import Observation
 
 /// Screen state and mutations for Settings: the runner's `UserPreferences`
 /// (units), Watch-scheduling authorization status with a request flow, and
-/// HealthKit read-permission priming via the local `HealthPermissionPriming`
-/// seam (see that protocol's doc comment for why it isn't a `DomainKit`
-/// port).
+/// HealthKit read-permission priming via the DomainKit
+/// `HealthPermissionPriming` port. The concrete implementation lives in DataKit.
 ///
 /// Default-pace-per-intent editing is intentionally **not** included here:
 /// it would need a full pace-range editing UI (minutes/seconds per intent,
@@ -68,7 +67,7 @@ public final class SettingsViewModel {
     ///   - preferencesStore: Loads/persists `UserPreferences`.
     ///   - watchSyncService: Reports/requests Watch-scheduling authorization.
     ///   - healthPermissionPriming: Reports/requests HealthKit read
-    ///     permission via the local seam (see its doc comment).
+    ///     permission via the DomainKit port (see its doc comment).
     ///   - initialPreferences: Shown before the first `load()` completes.
     ///     Defaults to `UserPreferences()`.
     public init(
