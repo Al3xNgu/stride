@@ -4,6 +4,16 @@ Append-only log of Apple API findings (api-researcher) and hardware spike result
 
 ---
 
+## 2026-10-08 — Continuation audit and MVP presentation fixes
+
+The read-only continuation audit found that the current HealthKit adapter performs a one-shot anchored fetch and returns an archived anchor, but no production caller persists that anchor or pairs the fetch with `HKObserverQuery` and background delivery. Task 1.11 remains open until those pieces and the app's HealthKit capability/`NSHealthShareUsageDescription` are added. The existing July SDK findings remain valid; this entry records implementation status, not a new Apple API claim.
+
+The Health permission boundary is now a DomainKit `HealthPermissionPriming` port with typed `HealthPermissionStatus`/`HealthPermissionPrimingError`, a DataKit implementation backed by the verified authorization APIs, and a TestSupport fake. FeatureSettings only consumes the port and does not import HealthKit. Read authorization remains opaque after the prompt: `.unnecessary` means already requested, not granted.
+
+The audit also found and fixed a retry-order defect in `IngestCompletedRunsUseCase`: run and split persistence now precede the `.completedRunLinked` transition, and replay retries the transition for an already-attributed run. Adversarial tests cover failures at both persistence boundaries.
+
+---
+
 ## 2026-07-06 — Task 0.5: WorkoutKit API surface (compose / validate / preview / authorize / schedule)
 
 **Researcher:** api-researcher. **Primary evidence (strongest):** the Swift module interface shipped in Xcode 26.6, read directly at

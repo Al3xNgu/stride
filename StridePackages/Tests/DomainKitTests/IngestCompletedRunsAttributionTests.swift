@@ -3,6 +3,52 @@ import Foundation
 @testable import DomainKit
 import TestSupport
 
+/// Injects one failure at a run-persistence boundary while forwarding every
+/// other operation to the in-memory repository. This models a crash-safe
+/// retry without changing the production port.
+private final class FailingRunHistoryRepository: RunHistoryRepository, @unchecked Sendable {
+    private let inner: FakeRunHistoryRepository
+    var failNextUpsert = false
+    var failNextSaveSplits = false
+
+    init(inner: FakeRunHistoryRepository) {
+        self.inner = inner
+    }
+
+    func upsert(_ run: CompletedRun) async throws {
+        if failNextUpsert {
+            failNextUpsert = false
+            throw RunHistoryRepositoryError.underlying("injected upsert failure")
+        }
+        try await inner.upsert(run)
+    }
+
+    func fetchAll() async throws -> [CompletedRun] { try await inner.fetchAll() }
+    func fetch(id: UUID) async throws -> CompletedRun? { try await inner.fetch(id: id) }
+    func fetch(from startDate: Date, to endDate: Date) async throws -> [CompletedRun] {
+        try await inner.fetch(from: startDate, to: endDate)
+    }
+    func markDeleted(id: UUID) async throws { try await inner.markDeleted(id: id) }
+
+    func saveSplits(_ splits: [Split], for runID: UUID) async throws {
+        if failNextSaveSplits {
+            failNextSaveSplits = false
+            throw RunHistoryRepositoryError.underlying("injected split failure")
+        }
+        try await inner.saveSplits(splits, for: runID)
+    }
+
+    func fetchSplits(runID: UUID) async throws -> [Split] { try await inner.fetchSplits(runID: runID) }
+    func savePersonalBest(_ personalBest: PersonalBest) async throws {
+        try await inner.savePersonalBest(personalBest)
+    }
+    func fetchPersonalBests() async throws -> [PersonalBest] { try await inner.fetchPersonalBests() }
+    func fetchPersonalBest(milestoneID: UUID) async throws -> PersonalBest? {
+        try await inner.fetchPersonalBest(milestoneID: milestoneID)
+    }
+    func deletePersonalBest(id: UUID) async throws { try await inner.deletePersonalBest(id: id) }
+}
+
 /// A `WorkoutRepository` decorator whose `fetchLatestSyncJob(workoutID:)`
 /// mutates its own backing store to `.stale` immediately after returning the
 /// FIRST lookup for `raceWorkoutID` — deterministically simulating
@@ -198,5 +244,62 @@ struct IngestCompletedRunsAttributionTests {
         // to `.completedRunLinked`.
         let job = try #require(await underlyingWorkouts.fetchLatestSyncJob(workoutID: workoutID))
         #expect(job.state == .stale)
+    }
+
+    @Test("A failed run upsert can be replayed without losing attribution")
+    func failedUpsertIsRetrySafe() async throws {
+        let underlyingHistory = FakeRunHistoryRepository()
+        let failingHistory = FailingRunHistoryRepository(inner: underlyingHistory)
+        let workouts = FakeWorkoutRepository()
+        let watchSync = FakeWatchSyncService()
+        let clock = FakeClock(currentDate: Fixtures.referenceDate)
+        let coordinator = SyncCoordinator(repository: workouts, watchSyncService: watchSync, clock: clock)
+        let useCase = IngestCompletedRunsUseCase(
+            runHistoryRepository: failingHistory,
+            workoutRepository: workouts,
+            syncCoordinator: coordinator
+        )
+        let workoutID = try await Fixtures.seedSyncedJob(in: workouts, scheduledDate: Fixtures.referenceDate)
+        let run = Fixtures.makeRun()
+        failingHistory.failNextUpsert = true
+
+        await #expect(throws: RunHistoryRepositoryError.underlying("injected upsert failure")) {
+            try await useCase.execute(IngestionBatch(runs: [IngestedRun(run: run)]))
+        }
+
+        let report = try await useCase.execute(IngestionBatch(runs: [IngestedRun(run: run)]))
+
+        #expect(report.attributedRunIDs[run.id] == workoutID)
+        #expect(underlyingHistory.runsByID[run.id]?.workoutID == workoutID)
+        let job = try #require(await workouts.fetchLatestSyncJob(workoutID: workoutID))
+        #expect(job.state == .completedRunLinked)
+    }
+
+    @Test("A failed split save is replayed and repairs a still-synced job")
+    func failedSplitSaveIsRetrySafe() async throws {
+        let underlyingHistory = FakeRunHistoryRepository()
+        let failingHistory = FailingRunHistoryRepository(inner: underlyingHistory)
+        let workouts = FakeWorkoutRepository()
+        let watchSync = FakeWatchSyncService()
+        let clock = FakeClock(currentDate: Fixtures.referenceDate)
+        let coordinator = SyncCoordinator(repository: workouts, watchSyncService: watchSync, clock: clock)
+        let useCase = IngestCompletedRunsUseCase(
+            runHistoryRepository: failingHistory,
+            workoutRepository: workouts,
+            syncCoordinator: coordinator
+        )
+        let workoutID = try await Fixtures.seedSyncedJob(in: workouts, scheduledDate: Fixtures.referenceDate)
+        let run = Fixtures.makeRun()
+        failingHistory.failNextSaveSplits = true
+
+        await #expect(throws: RunHistoryRepositoryError.underlying("injected split failure")) {
+            try await useCase.execute(IngestionBatch(runs: [IngestedRun(run: run)]))
+        }
+
+        _ = try await useCase.execute(IngestionBatch(runs: [IngestedRun(run: run)]))
+
+        #expect(underlyingHistory.runsByID[run.id]?.workoutID == workoutID)
+        let job = try #require(await workouts.fetchLatestSyncJob(workoutID: workoutID))
+        #expect(job.state == .completedRunLinked)
     }
 }

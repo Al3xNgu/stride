@@ -31,7 +31,7 @@ import HealthKit
 /// granularity are all unconfirmed on-device per RESEARCH-LOG's
 /// hardware-verify list — see the doc comments on the individual methods
 /// below and on `SplitDerivation` for the specific unverifiable claims.
-public struct HealthKitRunHistoryRepository: HealthKitRunIngestionSource {
+public struct HealthKitRunHistoryRepository: HealthKitRunIngestionSource, HealthPermissionPriming {
     private let healthStore: HKHealthStore
 
     /// Creates the real HealthKit-backed ingestion source.
@@ -46,6 +46,51 @@ public struct HealthKitRunHistoryRepository: HealthKitRunIngestionSource {
     /// `HKUnit(from: "count/min")` is the verified unit string for
     /// beats-per-minute heart-rate quantities (RESEARCH-LOG 2026-07-19 §4).
     private static var beatsPerMinute: HKUnit { HKUnit(from: "count/min") }
+
+    /// The current HealthKit read-request status, mapped at the DataKit
+    /// boundary so FeatureSettings never imports HealthKit.
+    public var status: HealthPermissionStatus {
+        get async throws {
+            guard HKHealthStore.isHealthDataAvailable() else {
+                throw HealthPermissionPrimingError.unavailable
+            }
+            do {
+                let requestStatus = try await healthStore.statusForAuthorizationRequest(
+                    toShare: [], read: Self.readTypes
+                )
+                switch requestStatus {
+                case .unknown:
+                    return .unknown
+                case .shouldRequest:
+                    return .shouldRequest
+                case .unnecessary:
+                    return .unnecessary
+                @unknown default:
+                    return .unknown
+                }
+            } catch {
+                throw HealthPermissionPrimingError.underlying(String(describing: error))
+            }
+        }
+    }
+
+    /// Requests read-only HealthKit access and returns the resulting request
+    /// status. A successful request means the prompt completed; HealthKit
+    /// intentionally does not disclose whether read access was granted.
+    public func requestAccess() async throws -> HealthPermissionStatus {
+        do {
+            try await requestAuthorizationIfNeeded()
+            return try await status
+        } catch HealthKitIngestionError.notAvailable {
+            throw HealthPermissionPrimingError.unavailable
+        } catch HealthKitIngestionError.authorizationFailed(let description) {
+            throw HealthPermissionPrimingError.requestFailed(description)
+        } catch HealthKitIngestionError.underlying(let description) {
+            throw HealthPermissionPrimingError.underlying(description)
+        } catch {
+            throw HealthPermissionPrimingError.underlying(String(describing: error))
+        }
+    }
 
     public func requestAuthorizationIfNeeded() async throws {
         guard HKHealthStore.isHealthDataAvailable() else {

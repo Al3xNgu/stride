@@ -38,7 +38,7 @@ The two most important architectural insights, from which most other decisions f
 │  │  Use Cases: BuildWorkout, ValidateWorkout, ScheduleWorkout,       │  │
 │  │             IngestCompletedRuns, RecalculatePersonalBests, ...    │  │
 │  │  Ports (protocols): WorkoutRepository, RunHistoryRepository,      │  │
-│  │             WatchSyncService, HealthStore, PRPolicy, Clock        │  │
+│  │             WatchSyncService, HealthPermissionPriming, Clock      │  │
 │  └────────▲──────────────────────────────────────────────────────────┘  │
 │           │  implements protocols                                       │
 │  ┌────────┴───────────────────── Data ───────────────────────────────┐  │
@@ -176,6 +176,7 @@ Relationship rationale summary: Workout→Segments is composition (segments have
 | `ScheduleWorkoutUseCase` | Domain | Orchestrates: validate → persist → enqueue SyncJob → invoke WatchSyncService → update state | Talking to WorkoutKit directly |
 | `WatchSyncService` (protocol) / `WorkoutKitSyncService` (impl) | Domain / Data | Map domain Workout → WorkoutKit composition, request authorization, schedule/remove plans, report granular failures | Deciding retry policy (Domain's job) |
 | `RunHistoryRepository` (protocol) / HealthKit impl | Domain / Data | Anchored/observer queries, background delivery, map HKWorkout(+samples) → CompletedRun, split derivation | PR logic |
+| `HealthPermissionPriming` (protocol) / HealthKit impl | Domain / Data | Read-only HealthKit authorization status and priming, with typed operational failures | Claiming that read access was granted |
 | `IngestCompletedRunsUseCase` | Domain | Idempotent upsert of projections, triggers PR recalculation, workout attribution heuristic | Query mechanics |
 | `PersonalBestPolicy` | Domain | Pure function: (run, milestones, current PRs) → PR updates; distance tolerance rules | I/O of any kind (this purity makes it exhaustively unit-testable) |
 | `WorkoutRepository` / SwiftData impl | Domain / Data | CRUD for workouts, sync jobs, PRs, prefs; migrations | Business rules |

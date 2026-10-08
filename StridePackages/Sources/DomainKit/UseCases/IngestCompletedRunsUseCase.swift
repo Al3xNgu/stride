@@ -311,20 +311,31 @@ public struct IngestCompletedRunsUseCase: Sendable {
         for ingested in ingestedRuns {
             var run = ingested.run
             let existing = try await runHistoryRepository.fetch(id: run.id)
+            var workoutIDToLink: UUID?
 
             if let existingWorkoutID = existing?.workoutID {
                 run.workoutID = existingWorkoutID
+                // The run may have been persisted successfully while the
+                // coordinator's state transition failed. Retrying an
+                // already-attributed run must therefore retry the link after
+                // persistence, rather than treating the existing attribution
+                // as proof that the job was linked too.
+                workoutIDToLink = existingWorkoutID
             } else if run.workoutID == nil, let matchedJob = try await attributeWorkoutID(for: run) {
-                // The run-side attribution is persisted regardless of
-                // whether the coordinator's job-state transition below is
-                // actually applied — see `execute(_:)`'s doc comment, point 2.
                 run.workoutID = matchedJob.workoutID
                 attributed[run.id] = matchedJob.workoutID
-                try await syncCoordinator.linkCompletedRun(workoutID: matchedJob.workoutID)
+                workoutIDToLink = matchedJob.workoutID
             }
 
             try await runHistoryRepository.upsert(run)
             try await runHistoryRepository.saveSplits(ingested.splits, for: run.id)
+            if let workoutIDToLink {
+                // Persist the run and its splits before changing the sync
+                // job. If either write fails, a replay sees the stored
+                // workoutID and retries this transition instead of losing
+                // attribution permanently.
+                try await syncCoordinator.linkCompletedRun(workoutID: workoutIDToLink)
+            }
 
             if finalRuns[run.id] == nil {
                 order.append(run.id)

@@ -30,11 +30,11 @@ Orchestrator: execute in order within a phase. `[R]` = dispatch api-researcher f
 
 ### Health ingestion & records
 - [x] 1.10 [R] RESEARCH: HealthKit anchored query + background delivery patterns for running workouts; distance-sample granularity for split derivation; completed-workout ↔ plan linkage reliability.
-- [x] 1.11 [T] DataKit HealthKitRunHistoryRepository: read-only auth (workouts, distance, HR), anchored incremental fetch with persisted anchor, HKWorkout → CompletedRun projection, split derivation from cumulative distance samples.
+- [ ] 1.11 [T] DataKit HealthKitRunHistoryRepository: read-only auth (workouts, distance, HR), anchored incremental fetch with persisted anchor, HKWorkout → CompletedRun projection, split derivation from cumulative distance samples. **Open audit gap:** the current adapter returns an opaque anchor to its caller but has no persisted-anchor store, observer/background-delivery wiring, or production ingestion caller.
 - [x] 1.12 [T] IngestCompletedRunsUseCase: idempotent upsert by UUID, deletion tombstones, schedule-window attribution heuristic, triggers PR recalc.
 - [x] 1.13 [T] PersonalBestPolicy: milestone config (1mi/5K/10K/Half/Marathon), tolerance rules, supersede/archive. Exhaustive tests — this is the flagship pure-logic suite.
-- [ ] 1.14 FeatureHistory: run list + detail (splits, HR summary). FeatureRecords: PR board + history, link to source run.
-- [ ] 1.15 FeatureSettings: units, permission status + priming/re-request flows.
+- [x] 1.14 FeatureHistory: run list + detail (splits, HR summary). FeatureRecords: PR board + history, link to source run. Error/retry and tombstone handling verified 2026-10-08.
+- [x] 1.15 FeatureSettings: units, permission status + priming/re-request flows. DomainKit/DataKit/TestSupport permission boundary and tests verified 2026-10-08.
 
 ### Assembly
 - [ ] 1.16 Composition root wiring, tab navigation, onboarding/priming sequence, empty states.
