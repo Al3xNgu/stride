@@ -18,6 +18,8 @@ Known issues and blockers:
 - The app remains a placeholder shell until task 1.16 wires feature view models, tabs, navigation, and real DataKit services.
 - WorkoutKit and HealthKit round-trip behavior remains hardware-dependent; see the open items in `docs/RESEARCH-LOG.md`.
 
+Implementation preparation for task 1.11 is captured in [`TASK-1.11-PLAN.md`](TASK-1.11-PLAN.md). The plan fixes the commit-cursor invariant: a HealthKit anchor advances only after the domain ingestion batch has persisted successfully.
+
 Immediate next steps:
 
 1. Complete task 1.11's durable anchor/observer ingestion path and app HealthKit configuration.
