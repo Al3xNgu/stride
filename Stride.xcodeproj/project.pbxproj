@@ -15,10 +15,16 @@
 		23B82CA02FFCC46900CCFD08 /* FeatureLibrary in Frameworks */ = {isa = PBXBuildFile; productRef = 23B82C9F2FFCC46900CCFD08 /* FeatureLibrary */; };
 		23B82CA22FFCC46900CCFD08 /* FeatureRecords in Frameworks */ = {isa = PBXBuildFile; productRef = 23B82CA12FFCC46900CCFD08 /* FeatureRecords */; };
 		23B82CA42FFCC46900CCFD08 /* FeatureSettings in Frameworks */ = {isa = PBXBuildFile; productRef = 23B82CA32FFCC46900CCFD08 /* FeatureSettings */; };
+		A10100000000000000000001 /* TestSupport in Frameworks */ = {isa = PBXBuildFile; productRef = A10100000000000000000002 /* TestSupport */; };
+		A10100000000000000000003 /* StrideUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A10100000000000000000004 /* StrideUITests.swift */; };
+		A10100000000000000000005 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A10100000000000000000006 /* XCTest.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		23B80F9F2FFCBDAC00CCFD08 /* Stride.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Stride.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A10100000000000000000004 /* StrideUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrideUITests.swift; sourceTree = "<group>"; };
+		A10100000000000000000006 /* XCTest.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = XCTest.framework; path = System/Library/Frameworks/XCTest.framework; sourceTree = SDKROOT; };
+		A10100000000000000000007 /* StrideUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = StrideUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -42,6 +48,15 @@
 				23B82C982FFCC46900CCFD08 /* DataKit in Frameworks */,
 				23B82C9E2FFCC46900CCFD08 /* FeatureHistory in Frameworks */,
 				23B82CA02FFCC46900CCFD08 /* FeatureLibrary in Frameworks */,
+				A10100000000000000000001 /* TestSupport in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A10100000000000000000009 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10100000000000000000005 /* XCTest.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -53,6 +68,7 @@
 			children = (
 				23B80FA02FFCBDAC00CCFD08 /* Products */,
 				23B80FA12FFCBDAC00CCFD08 /* Stride */,
+				A10100000000000000000008 /* StrideUITests */,
 				23B82C942FFCC44100CCFD08 /* Frameworks */,
 			);
 			sourceTree = "<group>";
@@ -61,8 +77,17 @@
 			isa = PBXGroup;
 			children = (
 				23B80F9F2FFCBDAC00CCFD08 /* Stride.app */,
+				A10100000000000000000007 /* StrideUITests.xctest */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		A10100000000000000000008 /* StrideUITests */ = {
+			isa = PBXGroup;
+			children = (
+				A10100000000000000000004 /* StrideUITests.swift */,
+			);
+			path = StrideUITests;
 			sourceTree = "<group>";
 		};
 		23B82C942FFCC44100CCFD08 /* Frameworks */ = {
@@ -100,10 +125,29 @@
 				23B82C9F2FFCC46900CCFD08 /* FeatureLibrary */,
 				23B82CA12FFCC46900CCFD08 /* FeatureRecords */,
 				23B82CA32FFCC46900CCFD08 /* FeatureSettings */,
+				A10100000000000000000002 /* TestSupport */,
 			);
 			productName = Stride;
 			productReference = 23B80F9F2FFCBDAC00CCFD08 /* Stride.app */;
 			productType = "com.apple.product-type.application";
+		};
+		A10100000000000000000010 /* StrideUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A10100000000000000000011 /* Build configuration list for PBXNativeTarget "StrideUITests" */;
+			buildPhases = (
+				A10100000000000000000012 /* Sources */,
+				A10100000000000000000009 /* Frameworks */,
+				A10100000000000000000013 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A10100000000000000000014 /* PBXTargetDependency */,
+			);
+			name = StrideUITests;
+			productName = StrideUITests;
+			productReference = A10100000000000000000007 /* StrideUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
 		};
 /* End PBXNativeTarget section */
 
@@ -117,6 +161,10 @@
 				TargetAttributes = {
 					23B80F9E2FFCBDAC00CCFD08 = {
 						CreatedOnToolsVersion = 26.6;
+					};
+					A10100000000000000000010 = {
+						CreatedOnToolsVersion = 26.6;
+						TestTargetID = 23B80F9E2FFCBDAC00CCFD08;
 					};
 				};
 			};
@@ -138,7 +186,15 @@
 			projectRoot = "";
 			targets = (
 				23B80F9E2FFCBDAC00CCFD08 /* Stride */,
+				A10100000000000000000010 /* StrideUITests */,
 			);
+		};
+		A10100000000000000000013 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXProject section */
 
@@ -147,6 +203,14 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A10100000000000000000012 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10100000000000000000003 /* StrideUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -350,6 +414,32 @@
 			};
 			name = Release;
 		};
+		A10100000000000000000015 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = Alex.StrideUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Stride;
+			};
+			name = Debug;
+		};
+		A10100000000000000000016 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				GENERATE_INFOPLIST_FILE = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = Alex.StrideUITests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_TARGET_NAME = Stride;
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -367,6 +457,15 @@
 			buildConfigurations = (
 				23B80FAB2FFCBDAD00CCFD08 /* Debug */,
 				23B80FAC2FFCBDAD00CCFD08 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A10100000000000000000011 /* Build configuration list for PBXNativeTarget "StrideUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A10100000000000000000015 /* Debug */,
+				A10100000000000000000016 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -421,7 +520,19 @@
 			package = 23B82C802FFCC1E300CCFD08 /* XCLocalSwiftPackageReference "StridePackages" */;
 			productName = FeatureSettings;
 		};
+		A10100000000000000000002 /* TestSupport */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 23B82C802FFCC1E300CCFD08 /* XCLocalSwiftPackageReference "StridePackages" */;
+			productName = TestSupport;
+		};
 /* End XCSwiftPackageProductDependency section */
+
+/* Begin PBXTargetDependency section */
+		A10100000000000000000014 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 23B80F9E2FFCBDAC00CCFD08 /* Stride */;
+		};
+/* End PBXTargetDependency section */
 	};
 	rootObject = 23B80F972FFCBDAC00CCFD08 /* Project object */;
 }

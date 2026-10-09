@@ -29,6 +29,7 @@ public struct BuilderView: View {
         List {
             Section("Name") {
                 TextField("Workout name", text: $viewModel.name)
+                    .accessibilityIdentifier("builder.workoutName")
             }
 
             Section("Summary") {
@@ -102,6 +103,7 @@ public struct BuilderView: View {
                 } label: {
                     Label("Add Segment", systemImage: "plus.circle")
                 }
+                .accessibilityIdentifier("builder.addSegment")
             }
 
             if let saveError = viewModel.saveError {
@@ -118,6 +120,7 @@ public struct BuilderView: View {
                     Task { await viewModel.save() }
                 }
                 .disabled(viewModel.isSaving)
+                .accessibilityIdentifier("builder.save")
             }
             #if os(iOS)
             ToolbarItem(placement: .automatic) {

@@ -94,6 +94,7 @@ public struct LibraryView: View {
                 } label: {
                     Label("New", systemImage: "plus")
                 }
+                .accessibilityIdentifier("library.newWorkout")
             }
         }
         .task {
@@ -145,6 +146,7 @@ public struct LibraryView: View {
         } label: {
             Label("Send to Watch Now", systemImage: "applewatch")
         }
+        .accessibilityIdentifier("library.sendToWatchNow")
         Button {
             scheduleTarget = ScheduleTarget(workoutID: row.workout.id, workoutName: row.workout.name)
         } label: {

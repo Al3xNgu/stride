@@ -20,7 +20,9 @@ final class StrideAppDelegate: NSObject, UIApplicationDelegate {
     func prepareStore() {
         guard container == nil else { return }
         do {
-            let created = try StrideAppContainer()
+            let created = try StrideAppContainer(
+                uiTesting: ProcessInfo.processInfo.arguments.contains("-StrideUITestMode")
+            )
             container = created
             startupFailed = false
             created.observeAtLaunch()

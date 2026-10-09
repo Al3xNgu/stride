@@ -348,10 +348,22 @@ private struct BuilderDestinationView: View {
     init(container: StrideAppContainer, workout: Workout?, displayUnit: DisplayDistanceUnit) {
         self.container = container
         self.displayUnit = displayUnit
+        let initialWorkout: Workout?
+        if container.isUITesting, workout == nil {
+            let now = container.clock.now()
+            initialWorkout = Workout(
+                name: "",
+                segments: [SegmentPaletteItem.intervalBlock.makeSegment()],
+                createdAt: now,
+                updatedAt: now
+            )
+        } else {
+            initialWorkout = workout
+        }
         _viewModel = State(initialValue: BuilderViewModel(
             workoutRepository: container.workoutRepository,
             clock: container.clock,
-            workout: workout
+            workout: initialWorkout
         ))
     }
 
