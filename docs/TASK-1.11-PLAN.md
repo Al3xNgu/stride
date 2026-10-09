@@ -7,7 +7,7 @@ Task 1.11 is the next implementation milestone. The existing adapter can perform
 ```text
 App launch / foreground / HealthKit observer wake-up
         ↓
-HealthKitIngestionCoordinator (serialized actor)
+RunIngestionCoordinator (serialized actor)
         ↓
 HealthKitRunIngestionSource.fetchRunningWorkouts(since: anchor)
         ↓
@@ -30,14 +30,14 @@ The anchor is a commit cursor. A failed projection, split write, tombstone, or p
    - execute the domain use case;
    - persist the returned anchor only after execution succeeds;
    - leave the old anchor intact on any failure;
-   - coalesce/reject overlapping runs so foreground and observer wake-ups cannot process the same cursor concurrently.
+   - queue overlapping triggers FIFO and perform a fresh anchored fetch for each one so foreground and observer wake-ups cannot race or lose a change notification.
 4. **Wire HealthKit background delivery.** Verify the exact SDK signatures before coding. Register the running-workout observer and enable background delivery for workout changes. The observer callback should only wake the coordinator and always call its completion handler, even when ingestion fails; retries happen on the next foreground/observer pass.
-5. **Add app configuration and launch wiring.** Add the HealthKit capability/entitlement and `NSHealthShareUsageDescription`. Construct one shared model container, repositories, coordinator, and feature view models in the composition root. Start permission priming and background registration only after the app has a usable scene and expose a visible retry path for typed failures.
+5. **Add app configuration and launch wiring.** Add the HealthKit capability/entitlements and `NSHealthShareUsageDescription`. Construct one shared model container, repositories, coordinator, and delivery adapter in the app composition root. Install the observer synchronously during application launch; request authorization only after the user taps Connect Health. Foreground refresh works independently and failures have a visible retry path. Full feature view models and navigation remain in task 1.16.
 
 ## Required tests
 
 - Anchor store: empty state, replacement, persistence across a new actor instance, and malformed-data handling.
-- Coordinator: successful batch advances the anchor; source/use-case failure preserves the old anchor; empty batches still advance the cursor; deleted IDs reach tombstoning; repeated callbacks are serialized and do not double-advance.
+- Coordinator: successful batch advances the anchor; source/use-case/anchor-save failure preserves a replayable cursor; empty batches still advance the cursor; deleted IDs reach tombstoning; overlapping triggers run FIFO from the latest committed cursor.
 - Authorization/configuration: unavailable HealthKit and request failures remain typed; background registration failures are surfaced rather than swallowed.
 - Integration seam: a fake source plus fake anchor store can drive the real `IngestCompletedRunsUseCase` and verify that the cursor commits after, never before, domain persistence.
 
@@ -52,6 +52,7 @@ Mark each result in `docs/RESEARCH-LOG.md` with the device and OS:
 - HealthKit deletion produces a local tombstone.
 - `HKWorkout.workoutPlan` linkage is present when a scheduled Stride workout is completed.
 - Observer callback completion is called on success and failure.
+- Storage-open failure preserves the store and presents a foreground retry; no background observer can be installed until storage opens.
 
 ## Definition of done
 

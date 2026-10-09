@@ -34,7 +34,7 @@ public enum CompletedRunMapper {
         model.source = run.source
         model.workoutID = run.workoutID
         model.notes = run.notes
-        model.isDeleted = run.isDeleted
+        model.deletedFlag = run.isDeleted
     }
 
     /// Maps `model` back to a domain `CompletedRun`.
@@ -48,7 +48,7 @@ public enum CompletedRunMapper {
             source: model.source,
             workoutID: model.workoutID,
             notes: model.notes,
-            isDeleted: model.isDeleted
+            isDeleted: model.deletedFlag
         )
     }
 }

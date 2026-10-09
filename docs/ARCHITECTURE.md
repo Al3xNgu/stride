@@ -175,7 +175,10 @@ Relationship rationale summary: Workout→Segments is composition (segments have
 | `BuildWorkoutUseCase` / `ValidateWorkout` | Domain | Structural rules (e.g., interval block needs ≥1 rep, pace ranges sane), unit normalization (store meters/seconds internally) | UI error presentation |
 | `ScheduleWorkoutUseCase` | Domain | Orchestrates: validate → persist → enqueue SyncJob → invoke WatchSyncService → update state | Talking to WorkoutKit directly |
 | `WatchSyncService` (protocol) / `WorkoutKitSyncService` (impl) | Domain / Data | Map domain Workout → WorkoutKit composition, request authorization, schedule/remove plans, report granular failures | Deciding retry policy (Domain's job) |
-| `RunHistoryRepository` (protocol) / HealthKit impl | Domain / Data | Anchored/observer queries, background delivery, map HKWorkout(+samples) → CompletedRun, split derivation | PR logic |
+| `RunIngestionSource` / `HealthKitRunHistoryRepository` | Domain / Data | Map anchored HealthKit workout changes into `IngestionBatch` projections and an opaque cursor | Persisting projections or advancing the cursor |
+| `IngestionAnchorStore` / `SwiftDataIngestionAnchorStore` | Domain / Data | Persist and replace the opaque HealthKit cursor in SwiftData | Query mechanics or projection mapping |
+| `RunIngestionDelivery` / `HealthKitRunBackgroundDelivery` | Domain / Data | Register the running-workout observer and background-delivery wake-up | Performing ingestion or persistence |
+| `RunHistoryRepository` / `SwiftDataRunHistoryRepository` | Domain / Data | Persist and query completed runs, splits, and personal-best records | HealthKit query mechanics |
 | `HealthPermissionPriming` (protocol) / HealthKit impl | Domain / Data | Read-only HealthKit authorization status and priming, with typed operational failures | Claiming that read access was granted |
 | `IngestCompletedRunsUseCase` | Domain | Idempotent upsert of projections, triggers PR recalculation, workout attribution heuristic | Query mechanics |
 | `PersonalBestPolicy` | Domain | Pure function: (run, milestones, current PRs) → PR updates; distance tolerance rules | I/O of any kind (this purity makes it exhaustively unit-testable) |
@@ -230,14 +233,15 @@ Reconciliation: on app foreground, SyncCoordinator lists currently scheduled pla
 
 ```
 App launch / foreground / background delivery wake-up
-   └─► RunHistoryRepository
+   └─► RunIngestionDelivery wakes RunIngestionCoordinator
          1. HKObserverQuery + background delivery on workoutType (running)
-         2. HKAnchoredObjectQuery from persisted anchor → new/updated/deleted
+         2. FIFO coordinator reads SwiftData's persisted cursor and runs
+            HKAnchoredObjectQuery → new/updated/deleted
             HKWorkouts since last sync (anchor stored in SwiftData)
          3. For each running HKWorkout:
               fetch distance & HR statistics/samples → build CompletedRun
-              derive Splits per mile/km from cumulative distance samples
-   └─► IngestCompletedRunsUseCase
+              derive kilometre splits from cumulative distance samples
+   └─► IngestCompletedRunsUseCase (called by the coordinator)
          4. Upsert projection keyed by HKWorkout.uuid (idempotent);
             handle HealthKit deletions by tombstoning the projection
          5. Attribution heuristic: match to Workout via schedule window
@@ -249,9 +253,13 @@ App launch / foreground / background delivery wake-up
               (true fastest 5K inside a 10K) — policy object swap, no schema change
          7. New PR ⇒ persist, archive superseded record, emit domain event
             → Records UI updates, (future) notification / widget reload
+         8. Persist the returned opaque HealthKit cursor only after all prior
+            projection, split, tombstone, and personal-best writes succeed
 ```
 
-Privacy posture: all reads on-device; we request read-only HealthKit scopes (workouts, distance, HR; elevation later), never write to HealthKit in MVP, and never transmit health data off device. Purpose strings and a permission-priming screen explain exactly why each scope is needed (also an App Review requirement).
+The observer is installed during application launch so background delivery has a retained callback before scene creation. Foreground activation independently reconciles through the same cursor path. HealthKit authorization is requested only from the explicit Connect Health action.
+
+Privacy posture: all reads on-device; we request read-only HealthKit scopes (workouts, distance, HR; elevation later), never write to HealthKit in MVP, and never transmit health data off device. The Connect Health screen explains why each scope is needed (also an App Review requirement).
 
 ---
 

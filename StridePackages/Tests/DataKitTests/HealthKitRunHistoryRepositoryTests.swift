@@ -1,4 +1,5 @@
 #if canImport(HealthKit)
+import DomainKit
 import Testing
 import Foundation
 import HealthKit
@@ -18,7 +19,7 @@ struct HealthKitAvailabilityGuardTests {
     func requestAuthorizationThrowsWhenUnavailable() async {
         guard !HKHealthStore.isHealthDataAvailable() else { return }
         let repository = HealthKitRunHistoryRepository()
-        await #expect(throws: HealthKitIngestionError.notAvailable) {
+        await #expect(throws: RunIngestionSourceError.notAvailable) {
             try await repository.requestAuthorizationIfNeeded()
         }
     }
@@ -27,7 +28,7 @@ struct HealthKitAvailabilityGuardTests {
     func fetchRunningWorkoutsThrowsWhenUnavailable() async {
         guard !HKHealthStore.isHealthDataAvailable() else { return }
         let repository = HealthKitRunHistoryRepository()
-        await #expect(throws: HealthKitIngestionError.notAvailable) {
+        await #expect(throws: RunIngestionSourceError.notAvailable) {
             _ = try await repository.fetchRunningWorkouts(since: nil, splitDistanceMeters: SplitDerivation.kilometerMeters)
         }
     }

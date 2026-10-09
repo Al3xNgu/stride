@@ -143,13 +143,17 @@ public actor SwiftDataWorkoutRepository: WorkoutRepository {
     /// (SwiftData/Foundation) in `.underlying` too, so nothing above this
     /// repository ever observes a raw non-port error type.
     private func wrapping<T>(_ body: () throws -> T) throws -> T {
+        modelContext.autosaveEnabled = false
         do {
             return try body()
         } catch let error as WorkoutRepositoryError {
+            modelContext.rollback()
             throw error
         } catch let error as DataKitError {
+            modelContext.rollback()
             throw WorkoutRepositoryError.underlying(error.description)
         } catch {
+            modelContext.rollback()
             throw WorkoutRepositoryError.underlying(String(describing: error))
         }
     }

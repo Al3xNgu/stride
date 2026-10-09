@@ -21,7 +21,9 @@ public final class CompletedRunModel {
     /// Soft, nullable link back to an authored `WorkoutModel`'s id.
     public var workoutID: UUID?
     public var notes: String?
-    public var isDeleted: Bool
+    /// Stored under a neutral name so SwiftData does not confuse the field
+    /// with an internal lifecycle marker.
+    @Attribute(originalName: "isDeleted") public var deletedFlag: Bool
 
     @Relationship(deleteRule: .cascade, inverse: \SplitModel.run)
     public var splits: [SplitModel]
@@ -49,7 +51,7 @@ public final class CompletedRunModel {
         self.source = source
         self.workoutID = workoutID
         self.notes = notes
-        self.isDeleted = isDeleted
+        deletedFlag = isDeleted
         self.splits = splits
     }
 }

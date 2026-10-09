@@ -3,7 +3,7 @@ import DomainKit
 import Foundation
 import HealthKit
 
-/// The real `HealthKitRunIngestionSource` adapter, backed by `HKHealthStore`'s
+/// The real `RunIngestionSource` adapter, backed by `HKHealthStore`'s
 /// modern async descriptor surface (`docs/ARCHITECTURE.md` §3.4/§6/§8;
 /// concrete surface verified in `docs/RESEARCH-LOG.md` 2026-07-19 Task 1.10 —
 /// every symbol below was re-confirmed directly against the shipped
@@ -11,8 +11,8 @@ import HealthKit
 /// `swiftc -typecheck` against both the iphonesimulator and macosx SDKs
 /// during this task, not merely paraphrased from the log). This is the only
 /// type in `DataKit` that talks to `HKHealthStore` directly for run
-/// ingestion — everything above it only ever sees the
-/// `HealthKitRunIngestionSource` protocol (CLAUDE.md rule 1/5).
+/// ingestion — everything above it only ever sees the DomainKit
+/// `RunIngestionSource` port (CLAUDE.md rule 1/5).
 ///
 /// Unlike `WorkoutKit` (`WorkoutKitSyncService`), HealthKit's framework
 /// module — and every API this type calls — is present in the SDK for both
@@ -31,7 +31,7 @@ import HealthKit
 /// granularity are all unconfirmed on-device per RESEARCH-LOG's
 /// hardware-verify list — see the doc comments on the individual methods
 /// below and on `SplitDerivation` for the specific unverifiable claims.
-public struct HealthKitRunHistoryRepository: HealthKitRunIngestionSource, HealthPermissionPriming {
+public struct HealthKitRunHistoryRepository: RunIngestionSource, HealthPermissionPriming {
     private let healthStore: HKHealthStore
 
     /// Creates the real HealthKit-backed ingestion source.
@@ -81,11 +81,11 @@ public struct HealthKitRunHistoryRepository: HealthKitRunIngestionSource, Health
         do {
             try await requestAuthorizationIfNeeded()
             return try await status
-        } catch HealthKitIngestionError.notAvailable {
+        } catch RunIngestionSourceError.notAvailable {
             throw HealthPermissionPrimingError.unavailable
-        } catch HealthKitIngestionError.authorizationFailed(let description) {
+        } catch RunIngestionSourceError.authorizationFailed(let description) {
             throw HealthPermissionPrimingError.requestFailed(description)
-        } catch HealthKitIngestionError.underlying(let description) {
+        } catch RunIngestionSourceError.underlying(let description) {
             throw HealthPermissionPrimingError.underlying(description)
         } catch {
             throw HealthPermissionPrimingError.underlying(String(describing: error))
@@ -94,34 +94,34 @@ public struct HealthKitRunHistoryRepository: HealthKitRunIngestionSource, Health
 
     public func requestAuthorizationIfNeeded() async throws {
         guard HKHealthStore.isHealthDataAvailable() else {
-            throw HealthKitIngestionError.notAvailable
+            throw RunIngestionSourceError.notAvailable
         }
 
         // HARDWARE-VERIFY: `.unnecessary` means "already asked" but
         // HealthKit gives no way to tell whether that prior request was
-        // granted or denied for reads (RESEARCH-LOG §3) -- callers must
-        // infer denial from empty results, never from this method.
+        // granted or denied for reads (RESEARCH-LOG §3) -- empty results
+        // do not prove denial and must never be presented as such.
         let status: HKAuthorizationRequestStatus
         do {
             status = try await healthStore.statusForAuthorizationRequest(toShare: [], read: Self.readTypes)
         } catch {
-            throw HealthKitIngestionError.underlying("\(error)")
+            throw RunIngestionSourceError.underlying("\(error)")
         }
         guard status == .shouldRequest else { return }
 
         do {
             try await healthStore.requestAuthorization(toShare: [], read: Self.readTypes)
         } catch {
-            throw HealthKitIngestionError.authorizationFailed("\(error)")
+            throw RunIngestionSourceError.authorizationFailed("\(error)")
         }
     }
 
     public func fetchRunningWorkouts(
         since anchorData: Data?,
         splitDistanceMeters: Double
-    ) async throws -> HealthKitRunFetchResult {
+    ) async throws -> RunIngestionFetchResult {
         guard HKHealthStore.isHealthDataAvailable() else {
-            throw HealthKitIngestionError.notAvailable
+            throw RunIngestionSourceError.notAvailable
         }
 
         let anchor = try Self.decodeAnchor(anchorData)
@@ -132,7 +132,7 @@ public struct HealthKitRunHistoryRepository: HealthKitRunIngestionSource, Health
         do {
             result = try await descriptor.result(for: healthStore)
         } catch {
-            throw HealthKitIngestionError.underlying("\(error)")
+            throw RunIngestionSourceError.underlying("\(error)")
         }
 
         var ingestedRuns: [IngestedRun] = []
@@ -150,9 +150,8 @@ public struct HealthKitRunHistoryRepository: HealthKitRunIngestionSource, Health
         let deletedIDs = result.deletedObjects.map(\.uuid)
         let newAnchorData = try Self.encodeAnchor(result.newAnchor)
 
-        return HealthKitRunFetchResult(
-            ingestedRuns: ingestedRuns,
-            deletedWorkoutIDs: deletedIDs,
+        return RunIngestionFetchResult(
+            batch: IngestionBatch(runs: ingestedRuns, deletedRunIDs: deletedIDs),
             newAnchor: newAnchorData
         )
     }
@@ -206,7 +205,7 @@ public struct HealthKitRunHistoryRepository: HealthKitRunIngestionSource, Health
                 )
             }
         } catch {
-            throw HealthKitIngestionError.underlying("\(error)")
+            throw RunIngestionSourceError.underlying("\(error)")
         }
         return points
     }
@@ -216,12 +215,15 @@ public struct HealthKitRunHistoryRepository: HealthKitRunIngestionSource, Health
     /// Decodes a caller-supplied anchor blob (`nil` = initial fetch).
     /// `HKQueryAnchor : NSSecureCoding` — round-tripped via
     /// `NSKeyedUnarchiver`/`NSKeyedArchiver` per RESEARCH-LOG §1.
-    private static func decodeAnchor(_ data: Data?) throws -> HKQueryAnchor? {
+    static func decodeAnchor(_ data: Data?) throws -> HKQueryAnchor? {
         guard let data else { return nil }
         do {
-            return try NSKeyedUnarchiver.unarchivedObject(ofClass: HKQueryAnchor.self, from: data)
+            guard let anchor = try NSKeyedUnarchiver.unarchivedObject(ofClass: HKQueryAnchor.self, from: data) else {
+                throw RunIngestionSourceError.anchorDecodeFailed
+            }
+            return anchor
         } catch {
-            throw HealthKitIngestionError.anchorDecodeFailed
+            throw RunIngestionSourceError.anchorDecodeFailed
         }
     }
 
@@ -229,7 +231,7 @@ public struct HealthKitRunHistoryRepository: HealthKitRunIngestionSource, Health
         do {
             return try NSKeyedArchiver.archivedData(withRootObject: anchor, requiringSecureCoding: true)
         } catch {
-            throw HealthKitIngestionError.underlying("failed to archive anchor: \(error)")
+            throw RunIngestionSourceError.underlying("failed to archive anchor: \(error)")
         }
     }
 }
