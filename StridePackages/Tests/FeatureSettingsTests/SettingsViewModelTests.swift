@@ -59,6 +59,33 @@ struct SettingsViewModelTests {
         ))
     }
 
+    @Test("completing onboarding preserves the selected unit and default paces")
+    func completingOnboardingPreservesExistingPreferences() async {
+        let preferences = UserPreferences(
+            distanceUnit: .kilometers,
+            defaultPacesByIntent: [.easy: 0.004, .tempo: 0.0035],
+            hasCompletedOnboarding: false
+        )
+        let store = FakePreferencesStore(storedPreferences: preferences)
+        let viewModel = makeViewModel(
+            store: store,
+            watch: FakeWatchSyncService(),
+            health: FakeHealthPermissionPriming()
+        )
+        await viewModel.load()
+
+        await viewModel.completeOnboarding()
+
+        #expect(viewModel.preferences.distanceUnit == preferences.distanceUnit)
+        #expect(viewModel.preferences.defaultPacesByIntent == preferences.defaultPacesByIntent)
+        #expect(viewModel.preferences.hasCompletedOnboarding)
+        #expect(store.savedPreferences.last == UserPreferences(
+            distanceUnit: preferences.distanceUnit,
+            defaultPacesByIntent: preferences.defaultPacesByIntent,
+            hasCompletedOnboarding: true
+        ))
+    }
+
     @Test("a failed Health request is typed, visible, and leaves the last status intact")
     func healthRequestErrorIsSurfaced() async {
         let health = FakeHealthPermissionPriming(status: .shouldRequest)

@@ -9,7 +9,7 @@
 
 ## 1. Executive Summary
 
-Stride is an iPhone-first application that lets runners compose structured workouts (warm-up, intervals, tempo/threshold efforts, repeats, cool-down) and push them to the **native Apple Watch Workout app**, then closes the loop by reading completed runs from **HealthKit** and maintaining personal records.
+Stride is an iPhone-first application that lets runners compose structured workouts (warm-up, intervals, tempo/threshold efforts, repeats, cool-down) and push them to the **native Apple Watch Workout app**, then closes the loop by reading completed runs from **HealthKit** and maintaining personal records. The production composition root wires Library/Builder, History/Run Detail, Records, and Settings through a four-tab shell.
 
 The two most important architectural insights, from which most other decisions follow:
 
@@ -94,6 +94,7 @@ Key property of the diagram: **arrows only point inward toward Domain.** Present
 
 ### 3.6 Settings / Preferences
 - Units (mi/km), default paces per intent, HealthKit/WorkoutKit permission status and re-request flows, data export.
+- First launch is owned by `SettingsViewModel`: the user explicitly connects Health or continues without it. Invalid persisted preferences present a reset/recovery view. Preference-backed display units are propagated to feature view models and formatters.
 
 ---
 
@@ -148,7 +149,7 @@ Workout (1) ──────< WorkoutSegment (ordered, 1..n)
 
 CompletedRun  ── read-model projected from HealthKit (HKWorkout UUID as key)
    │
-   └──────< Split (derived, 0..n)   — computed from distance samples, cached
+   └──────< Split (derived, 0..n)   — computed from distance samples, cached at kilometre granularity
 
 PersonalBest (per Milestone) ──► references CompletedRun (source of the record)
 Milestone (config value)     ──  1mi / 5K / 10K / Half / Marathon / future…
@@ -183,10 +184,12 @@ Relationship rationale summary: Workout→Segments is composition (segments have
 | `IngestCompletedRunsUseCase` | Domain | Idempotent upsert of projections, triggers PR recalculation, workout attribution heuristic | Query mechanics |
 | `PersonalBestPolicy` | Domain | Pure function: (run, milestones, current PRs) → PR updates; distance tolerance rules | I/O of any kind (this purity makes it exhaustively unit-testable) |
 | `WorkoutRepository` / SwiftData impl | Domain / Data | CRUD for workouts, sync jobs, PRs, prefs; migrations | Business rules |
-| Composition Root (App target) | App | Build the object graph once at launch; choose real vs fake implementations (previews/tests/demo mode) | Everything else |
+| Composition Root (App target) | App | Build the object graph once at launch; choose real vs fake implementations (previews/tests/demo mode); connect the four-tab shell and cross-feature reload actions | Everything else |
 | `SyncCoordinator` | Domain | Owns the SyncJob state machine, retry/backoff, reconciliation on foreground | UI |
 
 **Dependency injection approach:** constructor injection from a single composition root, with protocols defined in DomainKit. No third-party DI framework — the app has ~10 injectable services; a container library adds complexity without payoff. SwiftUI `Environment` is used only to pass already-constructed view models/routers down, not as a service locator.
+
+The app shell presents Library/Builder, History/Run Detail, Records, and Settings. A successful Health import refreshes History and Records; returning from Builder refreshes Library. These are composition-root coordination concerns, while each feature retains ownership of its screen state.
 
 ---
 

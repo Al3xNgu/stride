@@ -123,6 +123,15 @@ public final class SettingsViewModel {
         await save(updated)
     }
 
+    /// Records completion of the app-owned onboarding flow without changing
+    /// the runner's selected unit or default pace preferences.
+    public func completeOnboarding() async {
+        guard !preferences.hasCompletedOnboarding else { return }
+        var updated = preferences
+        updated.hasCompletedOnboarding = true
+        await save(updated)
+    }
+
     /// Recovery action for a corrupt-data `loadError`: persists
     /// `UserPreferences()` defaults, replaces `preferences` with them on
     /// success, and clears `loadError`. Never happens silently — this is

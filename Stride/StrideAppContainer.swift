@@ -10,6 +10,10 @@ final class StrideAppContainer {
     let modelContainer: ModelContainer
     let workoutRepository: SwiftDataWorkoutRepository
     let runHistoryRepository: SwiftDataRunHistoryRepository
+    let preferencesStore: UserDefaultsPreferencesStore
+    let watchSyncService: WorkoutKitSyncService
+    let clock: SystemClock
+    let syncCoordinator: SyncCoordinator
     let healthSource: HealthKitRunHistoryRepository
     let ingestionCoordinator: RunIngestionCoordinator
     var ingestionError: Error?
@@ -17,6 +21,8 @@ final class StrideAppContainer {
     var isRefreshing = false
     var hasRequestedAccess = false
     var importedRunCount: Int?
+    /// Changes after a successful import so feature view models can reload.
+    var ingestionRevision = 0
     @ObservationIgnored private lazy var healthDelivery = HealthKitRunBackgroundDelivery { [weak self] error in
         await self?.receiveUpdate(error)
     }
@@ -36,6 +42,7 @@ final class StrideAppContainer {
         let workouts = SwiftDataWorkoutRepository(modelContainer: container)
         let runs = SwiftDataRunHistoryRepository(modelContainer: container)
         let health = HealthKitRunHistoryRepository()
+        let preferences = UserDefaultsPreferencesStore()
         let watch = WorkoutKitSyncService()
         let clock = SystemClock()
         let sync = SyncCoordinator(repository: workouts, watchSyncService: watch, clock: clock)
@@ -54,6 +61,10 @@ final class StrideAppContainer {
         )
         workoutRepository = workouts
         runHistoryRepository = runs
+        preferencesStore = preferences
+        watchSyncService = watch
+        self.clock = clock
+        syncCoordinator = sync
         healthSource = health
         ingestionCoordinator = coordinator
     }
@@ -98,6 +109,7 @@ final class StrideAppContainer {
         do {
             _ = try await ingestionCoordinator.ingestNow()
             importedRunCount = try await runHistoryRepository.fetchAll().filter { !$0.isDeleted }.count
+            ingestionRevision &+= 1
             ingestionError = nil
         } catch {
             ingestionError = error

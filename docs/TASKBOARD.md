@@ -37,7 +37,7 @@ Orchestrator: execute in order within a phase. `[R]` = dispatch api-researcher f
 - [x] 1.15 FeatureSettings: units, permission status + priming/re-request flows. DomainKit/DataKit/TestSupport permission boundary and tests verified 2026-10-08.
 
 ### Assembly
-- [ ] 1.16 Composition root wiring, tab navigation, onboarding/priming sequence, empty states.
+- [x] 1.16 Composition root wiring, four-tab navigation (Library/Builder, History/Run Detail, Records, Settings), onboarding/priming sequence, and empty states. SettingsViewModel owns first-launch UserPreferences with explicit Health connection or continue choice; corrupt preferences show reset/recovery; successful Health imports reload History/Records; returning from Builder reloads Library; display units flow from preferences. Persisted split storage remains kilometre-granular. Verified 2026-10-09: 636 Swift Testing tests across 9 targets, strict lint (0 violations across 183 files), iOS simulator build/smoke, and code review PASS.
 - [ ] 1.17 End-to-end pass: UI test for build→save→send happy path (sync service faked); full-suite green; reviewer audit of module dependency graph.
 
 ## Phase 2 — v1.x (after human MVP sign-off)
