@@ -22,7 +22,7 @@ Implementation preparation for task 1.11 is captured in [`TASK-1.11-PLAN.md`](TA
 
 Immediate next steps:
 
-1. Run the signed-device checks for task 1.11: background delivery, `HKWorkout.workoutPlan` linkage, permission denial, and Apple-Watch sample granularity.
+1. Run the [signed-device validation protocol](TASK-1.11-DEVICE-VALIDATION.md) for task 1.11: background delivery, permission denial, durable ingestion, deletion, and Apple-Watch sample granularity. `HKWorkout.workoutPlan` linkage remains a separately approved follow-up because the current adapter uses the documented schedule-window heuristic.
 2. Start Phase 2 feature work after MVP sign-off, beginning with HR-zone and cadence targets.
 
 The detailed architecture, research evidence, and orchestration procedure remain authoritative in [`ARCHITECTURE.md`](ARCHITECTURE.md), [`RESEARCH-LOG.md`](RESEARCH-LOG.md), and [`ORCHESTRATION.md`](ORCHESTRATION.md).

@@ -45,6 +45,9 @@ The anchor is a commit cursor. A failed projection, split write, tombstone, or p
 
 Mark each result in `docs/RESEARCH-LOG.md` with the device and OS:
 
+Use the detailed [signed-device validation protocol](TASK-1.11-DEVICE-VALIDATION.md)
+to execute and record these checks.
+
 - Initial permission grant, prior denial, and re-request behavior.
 - First fetch imports existing running workouts and stores a cursor.
 - A newly completed Apple Watch run arrives through background delivery while the app is suspended.
