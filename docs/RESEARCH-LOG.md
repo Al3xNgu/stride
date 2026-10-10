@@ -140,11 +140,13 @@ Running-relevant alert types (each has a value init + a `WorkoutAlert` static-fa
 
 ## 2026-07-10 — Task 0.6 spike shipped: device-run checklist
 
-**Builder:** swift-builder. The spike screen (`Stride/DebugSpike/WorkoutKitSpikeView.swift` +
-`WorkoutKitSpikeModel.swift`, reachable from `ContentView` via a DEBUG-only "WorkoutKit Spike"
-link) must be run on a **physical iPhone with a paired Apple Watch (watchOS 11+)** — WorkoutKit
-scheduling has no simulator equivalent. Exercise the 8 numbered sections in order and record
-findings inline below each item.
+**Builder:** swift-builder. The now-retired debug spike screen
+(`Stride/DebugSpike/WorkoutKitSpikeView.swift` + `WorkoutKitSpikeModel.swift`) was run on a
+**physical iPhone with a paired Apple Watch (watchOS 11+)** — WorkoutKit scheduling has no
+simulator equivalent. Its findings informed the production DataKit adapter. The source files were
+removed on 2026-10-09 after task 1.17's dependency audit restored the strict rule that only
+DataKit imports Apple health/workout frameworks. This record preserves the eight-step device
+procedure and findings.
 
 1. **Environment readout** (auto-runs on appear; also has a manual refresh button) → confirms
    HARDWARE-VERIFY(2): runtime `maxAllowedScheduledWorkoutCount` value + the 7-day scheduling

@@ -20,6 +20,16 @@
 		A10100000000000000000005 /* XCTest.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A10100000000000000000006 /* XCTest.framework */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		234232423079BC8500A42191 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 23B80F972FFCBDAC00CCFD08 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 23B80F9E2FFCBDAC00CCFD08;
+			remoteInfo = Stride;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		23B80F9F2FFCBDAC00CCFD08 /* Stride.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Stride.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		A10100000000000000000004 /* StrideUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrideUITests.swift; sourceTree = "<group>"; };
@@ -82,19 +92,20 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		23B82C942FFCC44100CCFD08 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				A10100000000000000000006 /* XCTest.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		A10100000000000000000008 /* StrideUITests */ = {
 			isa = PBXGroup;
 			children = (
 				A10100000000000000000004 /* StrideUITests.swift */,
 			);
 			path = StrideUITests;
-			sourceTree = "<group>";
-		};
-		23B82C942FFCC44100CCFD08 /* Frameworks */ = {
-			isa = PBXGroup;
-			children = (
-			);
-			name = Frameworks;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -189,13 +200,6 @@
 				A10100000000000000000010 /* StrideUITests */,
 			);
 		};
-		A10100000000000000000013 /* Resources */ = {
-			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
@@ -206,11 +210,10 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-		A10100000000000000000012 /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
+		A10100000000000000000013 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				A10100000000000000000003 /* StrideUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -224,7 +227,23 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		A10100000000000000000012 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A10100000000000000000003 /* StrideUITests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A10100000000000000000014 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 23B80F9E2FFCBDAC00CCFD08 /* Stride */;
+			targetProxy = 234232423079BC8500A42191 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		23B80FA82FFCBDAD00CCFD08 /* Debug */ = {
@@ -351,11 +370,11 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Stride/Stride.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 8PURH8LVF7;
 				ENABLE_PREVIEWS = YES;
-				CODE_SIGN_ENTITLEMENTS = Stride/Stride.entitlements;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Stride reads running workouts, distance, and heart rate to build your history and records.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -385,11 +404,11 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = Stride/Stride.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 8PURH8LVF7;
 				ENABLE_PREVIEWS = YES;
-				CODE_SIGN_ENTITLEMENTS = Stride/Stride.entitlements;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_KEY_NSHealthShareUsageDescription = "Stride reads running workouts, distance, and heart rate to build your history and records.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
@@ -526,13 +545,6 @@
 			productName = TestSupport;
 		};
 /* End XCSwiftPackageProductDependency section */
-
-/* Begin PBXTargetDependency section */
-		A10100000000000000000014 /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 23B80F9E2FFCBDAC00CCFD08 /* Stride */;
-		};
-/* End PBXTargetDependency section */
 	};
 	rootObject = 23B80F972FFCBDAC00CCFD08 /* Project object */;
 }
