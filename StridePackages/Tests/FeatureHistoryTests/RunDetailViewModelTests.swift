@@ -140,4 +140,61 @@ struct RunDetailViewModelTests {
         #expect(harness.viewModel.loadError == nil)
         #expect(harness.viewModel.splitRows.isEmpty)
     }
+
+    @Test("displayRows groups kilometre storage into a complete mile")
+    func displayRowsRebinsKilometersToMiles() async throws {
+        let run = Fixtures.makeRun(distanceMeters: 1_609.344, durationSeconds: 420)
+        let harness = makeViewModel(runID: run.id, runs: [run])
+        let firstKilometer = Split(runID: run.id, index: 0, distanceMeters: 1_000, durationSeconds: 260)
+        let remainingDistance = 609.344
+        let finalPartial = Split(runID: run.id, index: 1, distanceMeters: remainingDistance, durationSeconds: 160)
+        try await harness.runRepository.saveSplits([firstKilometer, finalPartial], for: run.id)
+
+        await harness.viewModel.load()
+        let rows = harness.viewModel.displayRows(forSplitDistanceMeters: 1_609.344)
+        let kilometerRows = harness.viewModel.displayRows(forSplitDistanceMeters: 1_000)
+
+        #expect(rows.count == 1)
+        #expect(rows[0].index == 0)
+        #expect(abs(rows[0].distanceMeters - 1_609.344) < 0.000_001)
+        #expect(abs(rows[0].durationSeconds - 420) < 0.000_001)
+        #expect(abs((rows[0].paceSecondsPerMeter ?? 0) - (420 / 1_609.344)) < 0.000_001)
+        #expect(kilometerRows == harness.viewModel.splitRows)
+    }
+
+    @Test("displayRows preserves a partial final mile and valid stored rows on invalid input")
+    func displayRowsPreservesPartialAndInvalidBoundaryFallback() async throws {
+        let run = Fixtures.makeRun(distanceMeters: 2_000, durationSeconds: 600)
+        let harness = makeViewModel(runID: run.id, runs: [run])
+        let firstKilometer = Split(runID: run.id, index: 0, distanceMeters: 1_000, durationSeconds: 300)
+        let secondKilometer = Split(runID: run.id, index: 1, distanceMeters: 1_000, durationSeconds: 300)
+        try await harness.runRepository.saveSplits([firstKilometer, secondKilometer], for: run.id)
+
+        await harness.viewModel.load()
+        let mileRows = harness.viewModel.displayRows(forSplitDistanceMeters: 1_609.344)
+        let fallbackRows = harness.viewModel.displayRows(forSplitDistanceMeters: 0)
+
+        #expect(mileRows.count == 2)
+        #expect(abs(mileRows[0].distanceMeters - 1_609.344) < 0.000_001)
+        #expect(abs(mileRows[0].durationSeconds - 482.8032) < 0.000_001)
+        #expect(abs(mileRows[1].distanceMeters - 390.656) < 0.000_001)
+        #expect(abs(mileRows[1].durationSeconds - 117.1968) < 0.000_001)
+        #expect(fallbackRows == harness.viewModel.splitRows)
+    }
+
+    @Test("displayRows gives every re-binned portion a stable unique identity")
+    func displayRowsMakesRebinnedRowIDsUniqueAndStable() async throws {
+        let run = Fixtures.makeRun(distanceMeters: 4_000, durationSeconds: 1_000)
+        let harness = makeViewModel(runID: run.id, runs: [run])
+        let oversizedSplit = Split(runID: run.id, index: 0, distanceMeters: 4_000, durationSeconds: 1_000)
+        try await harness.runRepository.saveSplits([oversizedSplit], for: run.id)
+
+        await harness.viewModel.load()
+        let firstProjection = harness.viewModel.displayRows(forSplitDistanceMeters: 1_000)
+        let secondProjection = harness.viewModel.displayRows(forSplitDistanceMeters: 1_000)
+
+        #expect(firstProjection.count == 4)
+        #expect(Set(firstProjection.map(\.id)).count == 4)
+        #expect(firstProjection.map(\.id) == secondProjection.map(\.id))
+    }
 }

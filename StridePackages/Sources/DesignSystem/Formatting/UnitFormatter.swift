@@ -74,7 +74,7 @@ public enum UnitFormatter {
             return nil
         }
 
-        let totalSecondsPerUnit = secondsPerMeter * metersPerUnit(unit)
+        let totalSecondsPerUnit = secondsPerMeter * unit.metersPerUnit
         // The upper bound also guards `Int(_:)`, which traps (rather than
         // saturating) on finite doubles beyond Int.max.
         guard totalSecondsPerUnit.isFinite, totalSecondsPerUnit < Double(Int.max) else {
@@ -104,7 +104,7 @@ public enum UnitFormatter {
         let clampedMinutes = max(0, minutes)
         let clampedSeconds = max(0, seconds)
         let totalSecondsPerUnit = Double(clampedMinutes * 60 + clampedSeconds)
-        return totalSecondsPerUnit / metersPerUnit(unit)
+        return totalSecondsPerUnit / unit.metersPerUnit
     }
 
     // MARK: - Distance
@@ -131,7 +131,7 @@ public enum UnitFormatter {
             return "\(distancePlaceholder) \(distanceUnitSuffix(unit))"
         }
 
-        let convertedValue = meters / metersPerUnit(unit)
+        let convertedValue = meters / unit.metersPerUnit
         let formatter = decimalFormatter(fractionDigits: max(0, decimals), locale: locale)
         let numberString = formatter.string(from: NSNumber(value: convertedValue)) ?? distancePlaceholder
         return "\(numberString) \(distanceUnitSuffix(unit))"
@@ -208,15 +208,6 @@ public enum UnitFormatter {
     }
 
     // MARK: - Private helpers
-
-    private static func metersPerUnit(_ unit: DisplayDistanceUnit) -> Double {
-        switch unit {
-        case .kilometers:
-            return 1_000
-        case .miles:
-            return 1_609.344
-        }
-    }
 
     private static func paceUnitSuffix(_ unit: DisplayDistanceUnit) -> String {
         switch unit {

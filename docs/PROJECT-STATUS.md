@@ -4,7 +4,7 @@ Updated: 2026-10-09
 
 Stride is in Phase 1 (MVP). Tasks 1.1–1.10 and 1.12–1.17 are implemented in the current checkout. Task 1.11's implementation slice is present: durable cursor storage, run-history persistence, serialized ingestion, observer/background registration, app configuration, and a production composition-root caller. Task 1.11 remains open for signed-device verification of background delivery, permission-denial recovery, Apple Watch sample granularity, and `HKWorkout.workoutPlan` linkage.
 
-The current change set completes production app composition for Library/Builder, History/Run Detail, Records, and Settings. First launch uses SettingsViewModel-owned UserPreferences with an explicit Health connection or continue choice and a recoverable corrupt-preferences state. Successful Health imports reload History/Records, returning from Builder reloads Library, and display units propagate from preferences. Persisted split storage remains kilometre-granular.
+The current change set completes production app composition for Library/Builder, History/Run Detail, Records, and Settings. First launch uses SettingsViewModel-owned UserPreferences with an explicit Health connection or continue choice and a recoverable corrupt-preferences state. Successful Health imports reload History/Records, returning from Builder reloads Library, and display units propagate from preferences. Persisted split storage remains kilometre-granular; Run Detail re-groups those segments into full miles when Miles is selected.
 
 Verification on 2026-10-09:
 

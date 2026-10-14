@@ -104,6 +104,17 @@ public final class RunDetailViewModel {
         }
     }
 
+    /// Returns the loaded, kilometre-granular storage rows grouped into full
+    /// runner-facing units. Durations are apportioned linearly inside each
+    /// stored segment, matching the interpolation assumption used when the
+    /// HealthKit adapter derived the stored splits.
+    ///
+    /// Invalid boundaries and malformed stored rows deliberately fall back to
+    /// the original rows. A presentation preference must never hide history.
+    public func displayRows(forSplitDistanceMeters splitDistanceMeters: Double) -> [SplitRow] {
+        SplitRowRebinner.rebin(splitRows, to: splitDistanceMeters)
+    }
+
     /// Resolves `workoutID` to its `Workout.name`, tolerating a `nil` id, a
     /// missing workout, or a repository failure — attribution is
     /// best-effort display, not load-blocking (`docs/ARCHITECTURE.md` §3.4).
@@ -121,5 +132,126 @@ public final class RunDetailViewModel {
             durationSeconds: split.durationSeconds,
             paceSecondsPerMeter: split.distanceMeters > 0 ? split.durationSeconds / split.distanceMeters : nil
         )
+    }
+}
+
+/// Re-groups persisted split segments without altering SwiftData storage.
+///
+/// Health ingestion persists kilometre segments as its canonical, durable
+/// representation. This keeps existing records stable while allowing the
+/// detail screen to show whole-mile laps for runners using imperial units.
+enum SplitRowRebinner {
+    private static let epsilon = 0.000_001
+
+    static func rebin(
+        _ rows: [RunDetailViewModel.SplitRow],
+        to splitDistanceMeters: Double
+    ) -> [RunDetailViewModel.SplitRow] {
+        guard splitDistanceMeters.isFinite, splitDistanceMeters > epsilon,
+              rows.allSatisfy(isValid)
+        else {
+            return rows
+        }
+
+        let orderedRows = rows.sorted { $0.index < $1.index }
+        guard !orderedRows.isEmpty else { return [] }
+
+        var accumulator = Accumulator()
+        for row in orderedRows {
+            accumulator.consume(row, splitDistanceMeters: splitDistanceMeters)
+        }
+        accumulator.appendActiveRow(isComplete: false, splitDistanceMeters: splitDistanceMeters)
+        return accumulator.rows
+    }
+
+    private static func isValid(_ row: RunDetailViewModel.SplitRow) -> Bool {
+        row.distanceMeters.isFinite && row.distanceMeters > 0
+            && row.durationSeconds.isFinite && row.durationSeconds >= 0
+    }
+
+    private struct Accumulator {
+        var rows: [RunDetailViewModel.SplitRow] = []
+        private var activeDistance = 0.0
+        private var activeDuration = 0.0
+        private var activeSourceID: UUID?
+        private var usedIDs = Set<UUID>()
+
+        mutating func consume(
+            _ row: RunDetailViewModel.SplitRow,
+            splitDistanceMeters: Double
+        ) {
+            var remainingDistance = row.distanceMeters
+            var remainingDuration = row.durationSeconds
+
+            while remainingDistance > epsilon {
+                activeSourceID = activeSourceID ?? row.id
+                let distanceToBoundary = splitDistanceMeters - activeDistance
+                if distanceToBoundary <= epsilon {
+                    appendActiveRow(isComplete: true, splitDistanceMeters: splitDistanceMeters)
+                    resetActiveRow()
+                    continue
+                }
+
+                let consumedDistance = min(remainingDistance, distanceToBoundary)
+                let consumedDuration = remainingDuration * consumedDistance / remainingDistance
+                activeDistance += consumedDistance
+                activeDuration += consumedDuration
+                remainingDistance -= consumedDistance
+                remainingDuration -= consumedDuration
+
+                if activeDistance + epsilon >= splitDistanceMeters {
+                    appendActiveRow(isComplete: true, splitDistanceMeters: splitDistanceMeters)
+                    resetActiveRow()
+                }
+            }
+        }
+
+        mutating func appendActiveRow(isComplete: Bool, splitDistanceMeters: Double) {
+            guard let activeSourceID, activeDistance > epsilon else { return }
+            let distance = isComplete ? splitDistanceMeters : activeDistance
+            rows.append(
+                RunDetailViewModel.SplitRow(
+                    id: uniqueID(for: activeSourceID),
+                    index: rows.count,
+                    distanceMeters: distance,
+                    durationSeconds: activeDuration,
+                    paceSecondsPerMeter: activeDuration / distance
+                )
+            )
+        }
+
+        private mutating func resetActiveRow() {
+            activeDistance = 0
+            activeDuration = 0
+            activeSourceID = nil
+        }
+
+        private mutating func uniqueID(for sourceID: UUID) -> UUID {
+            guard !usedIDs.contains(sourceID) else {
+                var salt = rows.count + 1
+                var candidate = SplitRowRebinner.derivedID(from: sourceID, salt: salt)
+                while usedIDs.contains(candidate) {
+                    salt += 1
+                    candidate = SplitRowRebinner.derivedID(from: sourceID, salt: salt)
+                }
+                usedIDs.insert(candidate)
+                return candidate
+            }
+            usedIDs.insert(sourceID)
+            return sourceID
+        }
+    }
+
+    private static func derivedID(from sourceID: UUID, salt: Int) -> UUID {
+        var bytes = sourceID.uuid
+        var encodedSalt = UInt64(salt).bigEndian
+        withUnsafeMutableBytes(of: &bytes) { destination in
+            withUnsafeBytes(of: &encodedSalt) { source in
+                for index in source.indices {
+                    destination[8 + index] ^= source[index]
+                }
+            }
+        }
+        return UUID(uuid: bytes)
     }
 }

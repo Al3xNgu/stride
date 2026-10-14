@@ -20,6 +20,7 @@ public struct RunDetailView: View {
     }
 
     public var body: some View {
+        let displaySplitRows = viewModel.displayRows(forSplitDistanceMeters: displayUnit.metersPerUnit)
         List {
             if let loadError = viewModel.loadError {
                 Section {
@@ -31,9 +32,9 @@ public struct RunDetailView: View {
                 Section {
                     summaryHeader(for: run)
                 }
-                if !viewModel.splitRows.isEmpty {
+                if !displaySplitRows.isEmpty {
                     Section("Splits") {
-                        ForEach(viewModel.splitRows) { splitRow in
+                        ForEach(displaySplitRows) { splitRow in
                             splitRowView(splitRow)
                         }
                     }

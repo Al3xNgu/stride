@@ -18,4 +18,18 @@ public enum DisplayDistanceUnit: String, Equatable, Hashable, Sendable, CaseIter
     case kilometers
     /// Miles, for distance/pace display.
     case miles
+
+    /// The exact number of meters in one displayed distance unit.
+    ///
+    /// Keeping this conversion alongside the presentation-unit enum lets
+    /// screens use the same authoritative boundary for formatting and for
+    /// grouping persisted split segments into runner-facing laps.
+    public var metersPerUnit: Double {
+        switch self {
+        case .kilometers:
+            return 1_000
+        case .miles:
+            return 1_609.344
+        }
+    }
 }

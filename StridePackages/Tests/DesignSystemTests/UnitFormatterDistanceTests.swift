@@ -6,6 +6,12 @@ import Foundation
 /// distance formatting, including the meters/kilometers threshold rule.
 @Suite("UnitFormatter — distance")
 struct UnitFormatterDistanceTests {
+    @Test("Display units expose exact meter conversions")
+    func displayUnitMeterConversions() {
+        #expect(DisplayDistanceUnit.kilometers.metersPerUnit == 1_000)
+        #expect(DisplayDistanceUnit.miles.metersPerUnit == 1_609.344)
+    }
+
     @Test("5000m formats as 5.00 km by default")
     func kilometersDefaultDecimals() {
         #expect(UnitFormatter.distanceString(meters: 5_000, unit: .kilometers) == "5.00 km")
