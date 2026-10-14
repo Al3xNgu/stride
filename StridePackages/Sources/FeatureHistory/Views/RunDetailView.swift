@@ -32,7 +32,11 @@ public struct RunDetailView: View {
                 Section {
                     summaryHeader(for: run)
                 }
-                if !displaySplitRows.isEmpty {
+                if viewModel.isLoading, displaySplitRows.isEmpty {
+                    Section {
+                        loadingRow("Loading splits…")
+                    }
+                } else if !displaySplitRows.isEmpty {
                     Section("Splits") {
                         ForEach(displaySplitRows) { splitRow in
                             splitRowView(splitRow)
@@ -44,6 +48,10 @@ public struct RunDetailView: View {
                         heartRateRow(for: run)
                     }
                 }
+            } else if viewModel.isLoading {
+                Section {
+                    loadingRow("Loading run details…")
+                }
             } else if viewModel.loadError != nil {
                 Text("This run couldn't be loaded.")
                     .foregroundStyle(Colors.secondaryText)
@@ -52,6 +60,14 @@ public struct RunDetailView: View {
         .navigationTitle("Run Detail")
         .task {
             await viewModel.load()
+        }
+    }
+
+    private func loadingRow(_ title: String) -> some View {
+        HStack(spacing: Spacing.small) {
+            ProgressView()
+            Text(title)
+                .foregroundStyle(Colors.secondaryText)
         }
     }
 

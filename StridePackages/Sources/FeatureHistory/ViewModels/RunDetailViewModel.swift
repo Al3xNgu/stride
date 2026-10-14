@@ -71,10 +71,12 @@ public final class RunDetailViewModel {
         self.workoutRepository = workoutRepository
     }
 
-    /// Loads the run, its splits, and its attribution. A missing or tombstoned
-    /// run clears the detail state and sets `loadError`; a later repository
-    /// failure preserves the last successful detail so the view can show it
-    /// alongside the visible error and offer a retry.
+    /// Loads the run, then its splits and attribution. Once the run itself is
+    /// available, it is published immediately so the detail header can render
+    /// while the independent, secondary reads continue. A missing or
+    /// tombstoned run clears the detail state and sets `loadError`; a later
+    /// repository failure preserves the available detail alongside the visible
+    /// error and retry action.
     public func load() async {
         loadError = nil
         isLoading = true
@@ -89,10 +91,13 @@ public final class RunDetailViewModel {
                 return
             }
 
-            let splits = try await runHistoryRepository.fetchSplits(runID: runID)
-            let workoutName = await resolveWorkoutName(workoutID: fetchedRun.workoutID)
-
             run = fetchedRun
+            async let fetchedSplits = runHistoryRepository.fetchSplits(runID: runID)
+            async let fetchedWorkoutName = Self.resolveWorkoutName(
+                workoutID: fetchedRun.workoutID,
+                workoutRepository: workoutRepository
+            )
+            let (splits, workoutName) = try await (fetchedSplits, fetchedWorkoutName)
             splitRows = splits
                 .sorted { $0.index < $1.index }
                 .map(Self.makeSplitRow)
@@ -118,7 +123,10 @@ public final class RunDetailViewModel {
     /// Resolves `workoutID` to its `Workout.name`, tolerating a `nil` id, a
     /// missing workout, or a repository failure — attribution is
     /// best-effort display, not load-blocking (`docs/ARCHITECTURE.md` §3.4).
-    private func resolveWorkoutName(workoutID: UUID?) async -> String? {
+    private static func resolveWorkoutName(
+        workoutID: UUID?,
+        workoutRepository: WorkoutRepository
+    ) async -> String? {
         guard let workoutID else { return nil }
         let workout = try? await workoutRepository.fetch(id: workoutID)
         return workout?.name

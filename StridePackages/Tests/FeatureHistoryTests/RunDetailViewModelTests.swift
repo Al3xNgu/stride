@@ -130,6 +130,20 @@ struct RunDetailViewModelTests {
         #expect(harness.viewModel.run?.id == run.id)
     }
 
+    @Test("load() keeps the summary available when its secondary split read fails")
+    func loadKeepsSummaryWhenSplitReadFails() async {
+        let run = Fixtures.makeRun(distanceMeters: 3_000, durationSeconds: 900)
+        let harness = makeViewModel(runID: run.id, runs: [run])
+        harness.runRepository.splitFetchError = RunHistoryRepositoryError.underlying("Split store unavailable")
+
+        await harness.viewModel.load()
+
+        #expect(harness.viewModel.run?.id == run.id)
+        #expect(harness.viewModel.splitRows.isEmpty)
+        #expect(harness.viewModel.loadError == .underlying("Split store unavailable"))
+        #expect(!harness.viewModel.isLoading)
+    }
+
     @Test("load() with no splits produces an empty splits table")
     func loadWithNoSplitsIsEmpty() async {
         let run = Fixtures.makeRun()

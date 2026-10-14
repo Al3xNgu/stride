@@ -166,6 +166,19 @@ struct FakeRunHistoryRepositoryTests {
         #expect(fetched.isEmpty)
     }
 
+    @Test("splitFetchError affects only fetchSplits(runID:)")
+    func splitFetchErrorDoesNotAffectOtherRepositoryCalls() async throws {
+        let repository = FakeRunHistoryRepository()
+        let run = makeRun()
+        try await repository.upsert(run)
+        repository.splitFetchError = RunHistoryRepositoryError.underlying("Split store unavailable")
+
+        #expect(try await repository.fetch(id: run.id) == run)
+        await #expect(throws: RunHistoryRepositoryError.underlying("Split store unavailable")) {
+            _ = try await repository.fetchSplits(runID: run.id)
+        }
+    }
+
     @Test("saveSplits(_:for:) for one run does not affect another run's splits")
     func saveSplitsIsolatedPerRun() async throws {
         let repository = FakeRunHistoryRepository()

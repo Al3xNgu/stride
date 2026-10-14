@@ -17,6 +17,10 @@ public final class FakeRunHistoryRepository: RunHistoryRepository, @unchecked Se
     public var splitsByRunID: [UUID: [Split]]
     /// When set, every call throws this error instead of succeeding.
     public var errorToThrow: Error?
+    /// When set, only `fetchSplits(runID:)` throws this error. This allows
+    /// feature tests to cover a detail-read failure after a run summary has
+    /// loaded successfully.
+    public var splitFetchError: Error?
 
     /// Creates a fake run history repository pre-seeded with `runs` and
     /// `personalBests`.
@@ -73,6 +77,9 @@ public final class FakeRunHistoryRepository: RunHistoryRepository, @unchecked Se
     }
 
     public func fetchSplits(runID: UUID) async throws -> [Split] {
+        if let splitFetchError {
+            throw splitFetchError
+        }
         if let errorToThrow {
             throw errorToThrow
         }
